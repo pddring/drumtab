@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>DrumTab</title>
+        <link rel="stylesheet" href="styles.css">
+    <body>
+        <h1>DrumTab</h1>
+        <p>Interactive drum practice tool</p>
+        <h2>Tab</h2>
+        <p>Type out or copy your drum tab here</p>
+<textarea id="tab">
+HH|x-x-x-x-x-x-x-x-||
+ S|----o-------o---||
+ B|O-------o-------||
+   1 + 2 + 3 + 4 +
+</textarea>
+    <h2>ABC</h2>
+    <p>This will (eventually) be auto generated from the drum tab</p>
+<textarea id="abc">
+
+</textarea>
+
+    <h2>Score</h2>
+    <p>The ABC should generate a musical score here</p>
+    <div id="score"></div>
+
+    <script src="lib/abcjs-basic-min.js"></script> 
+    <script src="drumtab.js"></script> 
+    <script>
+        const eTab = document.getElementById("tab");
+        const eAbc = document.getElementById("abc");
+        const eScore = document.getElementById("score");
+        
+        eTab.addEventListener("input", updateABC);
+        eAbc.addEventListener("input", updateScore);
+
+        function updateABC() {
+            let tab = eTab.value;
+            eAbc.value = drumtab.Tab2ABC(tab);
+        }
+
+        function updateScore() {
+            let abc = eAbc.value;
+            ABCJS.renderAbc("score", abc);
+        }
+
+        updateABC();
+        updateScore();
+
+
+    </script>
+    </body>
+</html>
