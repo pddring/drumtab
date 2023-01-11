@@ -4,10 +4,11 @@ Play and practice alongside drum tab
 ## Aim:
 I'd like to be able to quickly write out (or copy) some drum tabs such as the following
 
-` HH|x-x-x-x-x-x-x-x-||
+```
+   HH|x-x-x-x-x-x-x-x-||
    S|----o-------o---||
    B|o-------o-------||
-     1 + 2 + 3 + 4 +`
+     1 + 2 + 3 + 4 +```
 
 I'd like a web based solution that will: 
 - parse the tab and display it on a musical stave
