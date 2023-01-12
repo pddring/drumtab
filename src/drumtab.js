@@ -203,29 +203,38 @@ drumtab.Tab2ABC = (tab, voicing) => {
 
     for(let i = 0; i < drums.bars.length; i++) {
         abc += "|";
-        let voiceCount = Object.keys(drums.bars[i].voicing).length;
-        let currentVoice = 0;
-        for(const [voiceName, v] of Object.entries(drums.bars[i].voicing)) {
-            for(const [beat, notes] of Object.entries(v.beats)) {
-                if(notes.length > 1) {
-                    abc += "[";
-                }                 
-                for(let j = 0; j < notes.length; j++) {
-                    abc += notes[j].abc;
-                }
+        // check if bar is empty
+        if(Object.keys(drums.bars[i].all).length == 0) {
+            abc += `z${drums.beats}`
+        } 
 
-                if(notes.length > 1) {
-                    abc += "]";
+        // bar is not empty
+        else {
+
+            let voiceCount = Object.keys(drums.bars[i].voicing).length;
+            let currentVoice = 0;
+            for(const [voiceName, v] of Object.entries(drums.bars[i].voicing)) {
+                for(const [beat, notes] of Object.entries(v.beats)) {
+                    if(notes.length > 1) {
+                        abc += "[";
+                    }                 
+                    for(let j = 0; j < notes.length; j++) {
+                        abc += notes[j].abc;
+                    }
+
+                    if(notes.length > 1) {
+                        abc += "]";
+                    }
+                    console.log(voiceName, beat, notes)
                 }
-                console.log(voiceName, beat, notes)
+                if(currentVoice < voiceCount) {
+                    abc += "&\\";
+                } else {
+                    abc += "|";
+                }
+                
+                currentVoice++;
             }
-            if(currentVoice < voiceCount) {
-                abc += "&\\";
-            } else {
-                abc += "|";
-            }
-            
-            currentVoice++;
         }
     }
 
