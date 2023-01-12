@@ -106,7 +106,7 @@ drumtab.Tab2ABC = (tab, voicing) => {
     for(let i = 0; i < lines.length; i++) {
         
         // extract part names
-        let m = lines[i].match(/^\s*([A-Za-z])+\s*\|/);
+        let m = lines[i].match(/^\s*([A-Za-z]+)\s*:?\s*\|/);
         if(m) {
             let instrument = midi.lookup(m[1]);
             let voice = {
@@ -220,9 +220,9 @@ drumtab.Tab2ABC = (tab, voicing) => {
                 console.log(voiceName, beat, notes)
             }
             if(currentVoice < voiceCount) {
-                abc += "&\\\n";
+                abc += "&\\";
             } else {
-                abc += "|\n";
+                abc += "|";
             }
             
             currentVoice++;
