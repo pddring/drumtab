@@ -171,7 +171,9 @@ drumtab.Tab2ABC = (tab, voicing) => {
                                         instrument: voice.instrument,
                                         style: bar[k],
                                         duration: duration,
-                                        abc: instrument.stave + (duration>1?duration:"")
+                                        abc: (bar[k] == "O"||bar[k] == "X"?"!^!":"") + 
+                                            instrument.stave + 
+                                            (duration>1?duration:"")
                                     }
                                     drums.bars[j].voicing[voicing.names[l]].beats[k].push(note);
                                 }
