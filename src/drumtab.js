@@ -93,6 +93,21 @@ drumtab.voicingOptions = [
     }
 ];
 
+drumtab.Note2ABC = (tabChar, instrument, duration, preChord=false) => {
+    // sometimes (e.g. flams) there's part of the ABC notation which needs to be written before a chord []
+    if(preChord) {
+        return (tabChar == "f"?
+            '{' + instrument.stave +  // flam
+            (duration>1?duration:"") + 
+            '}'
+        :'');
+    }
+
+    return (tabChar == "O"||tabChar == "X"?"!^!":"") + // Accent
+    instrument.stave + 
+    (duration>1?duration:"")
+}
+
 drumtab.Tab2ABC = (tab, voicing) => {
     if(voicing === undefined) {
         voicing = drumtab.voicingOptions[1];
@@ -171,9 +186,7 @@ drumtab.Tab2ABC = (tab, voicing) => {
                                         instrument: voice.instrument,
                                         style: bar[k],
                                         duration: duration,
-                                        abc: (bar[k] == "O"||bar[k] == "X"?"!^!":"") + 
-                                            instrument.stave + 
-                                            (duration>1?duration:"")
+                                        abc: drumtab.Note2ABC(bar[k], instrument, duration)
                                     }
                                     drums.bars[j].voicing[voicing.names[l]].beats[k].push(note);
                                 }
@@ -202,7 +215,6 @@ drumtab.Tab2ABC = (tab, voicing) => {
     "K:perc\n"
 
     for(let i = 0; i < drums.bars.length; i++) {
-        abc += "|";
         // check if bar is empty
         if(Object.keys(drums.bars[i].all).length == 0) {
             abc += `z${drums.beats}`
@@ -210,22 +222,44 @@ drumtab.Tab2ABC = (tab, voicing) => {
 
         // bar is not empty
         else {
-
             let voiceCount = Object.keys(drums.bars[i].voicing).length;
             let currentVoice = 0;
             for(const [voiceName, v] of Object.entries(drums.bars[i].voicing)) {
+                let beatCount = 0;
                 for(const [beat, notes] of Object.entries(v.beats)) {
+                    if(beatCount != beat) {
+                        debugger;
+                    }
+                    let duration = drums.beats;
+                    // find minimum note duration
+                    for(let j = 0; j < notes.length; j++) {
+                        if(notes[j].duration < duration) {
+                            duration = notes[j].duration;
+                        } 
+                    }
+
+                    for(let j = 0; j < notes.length; j++) {
+                        abc += drumtab.Note2ABC(notes[j].style, midi.lookup(notes[j].instrument), duration, true);
+                    }
+                    
+                    // start a chord if necessary
                     if(notes.length > 1) {
                         abc += "[";
-                    }                 
+                    }  
+
                     for(let j = 0; j < notes.length; j++) {
+                        // reset duration of all notes to minimum duration
+                        notes[j].duration = duration;
+                        notes[j].abc = drumtab.Note2ABC(notes[j].style, midi.lookup(notes[j].instrument), duration);
                         abc += notes[j].abc;
                     }
 
+                    // end a chord if necessary
                     if(notes.length > 1) {
                         abc += "]";
+                        
                     }
-                    console.log(voiceName, beat, notes)
+                    beatCount += duration;
                 }
                 if(currentVoice < voiceCount) {
                     abc += "&\\";
@@ -236,6 +270,7 @@ drumtab.Tab2ABC = (tab, voicing) => {
                 currentVoice++;
             }
         }
+        abc += "|";
     }
 
     /// todo: not quite there yet!
