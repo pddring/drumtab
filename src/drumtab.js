@@ -85,10 +85,8 @@ drumtab.voicingOptions = [
         name: "Cymbals and drums",
         names: ["Cymbals", "Drums"],
         voices: [
-            [
-                ["CC", "HH", "RD", "HF"],
-                ["SN", "T1", "T2", "FT", "BD"]
-            ]
+            ["CC", "HH", "RD", "HF"],
+            ["SN", "T1", "T2", "FT", "BD"]
         ]
     }
 ];

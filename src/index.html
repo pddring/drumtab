@@ -14,6 +14,12 @@ HH|x-x-x-x-x-x-x-x-||
  B|O-------o-------||
    1 + 2 + 3 + 4 +
 </textarea>
+<select id="voicing">
+    <option value="0">Single voice</option>
+    <option value="1" selected>Hands and feet</option>
+    <option value="2">Cymbals and drums</option>
+</select>
+
     <h2>ABC</h2>
     <p>This will (eventually) be auto generated from the drum tab</p>
 <textarea id="abc">
@@ -30,13 +36,19 @@ HH|x-x-x-x-x-x-x-x-||
         const eTab = document.getElementById("tab");
         const eAbc = document.getElementById("abc");
         const eScore = document.getElementById("score");
+        const eVoicing = document.getElementById("voicing");
+        var voicing = undefined;
         
         eTab.addEventListener("input", updateABC);
         eAbc.addEventListener("input", updateScore);
+        eVoicing.addEventListener("change", (e => {
+            voicing = drumtab.voicingOptions[e.currentTarget.value];
+            updateABC();
+        }));
 
         function updateABC() {
             let tab = eTab.value;
-            eAbc.value = drumtab.Tab2ABC(tab);
+            eAbc.value = drumtab.Tab2ABC(tab, voicing);
             updateScore();
         }
 
