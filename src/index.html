@@ -29,7 +29,16 @@ HH|x-x-x-x-x-x-x-x-||
     <h2>Score</h2>
     <p>The ABC should generate a musical score here</p>
     <div id="score"></div>
-
+    
+    <div>
+        <button id="btn-slower">-</button>
+        <input id="bpm" value="60">
+        <button id="btn-faster">+</button>
+    </div>
+    <button id="btn-play-stop">Play</button>
+    
+    <div id="drums">
+    </div>
     <script src="lib/abcjs-basic-min.js"></script> 
     <script src="drumtab.js"></script> 
     <script>
@@ -37,8 +46,42 @@ HH|x-x-x-x-x-x-x-x-||
         const eAbc = document.getElementById("abc");
         const eScore = document.getElementById("score");
         const eVoicing = document.getElementById("voicing");
+        const ePlayStop = document.getElementById("btn-play-stop");
+        const eBPM = document.getElementById("bpm");
+        eBPM.addEventListener("change", e => {
+            bpm = parseInt(eBPM.value);
+            updateBPM();
+        });
+        document.getElementById("btn-faster").addEventListener("click", e => {
+            bpm += 5;
+            updateBPM();
+        });
+
+        document.getElementById("btn-slower").addEventListener("click", e => {
+            bpm -= 5;
+            updateBPM();
+        });
+
         var voicing = undefined;
+        let playing = false;
+        let bpm = 60;
         
+        function updateBPM() {
+            eBPM.value = bpm;
+        }
+        
+        ePlayStop.addEventListener("click", e=> {
+            if(drumtab.playing && !drumtab.playback.isPaused) {
+                drumtab.pause();
+                ePlayStop.innerText = "Resume";
+            } else {
+                ePlayStop.innerText = "Stop";
+                drumtab.play(e => {
+                    ePlayStop.innerText = "Play";
+                });
+            }
+        });
+
         eTab.addEventListener("input", updateABC);
         eAbc.addEventListener("input", updateScore);
         eVoicing.addEventListener("change", (e => {
@@ -51,10 +94,11 @@ HH|x-x-x-x-x-x-x-x-||
             eAbc.value = drumtab.Tab2ABC(tab, voicing);
             updateScore();
         }
-
+        var selectedNotes = [];
         function updateScore() {
             let abc = eAbc.value;
-            ABCJS.renderAbc("score", abc);
+            score = ABCJS.renderAbc("score", abc)[0];
+
         }
 
         updateABC();

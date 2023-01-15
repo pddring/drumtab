@@ -11,3 +11,13 @@ body {
     width: 100%;
     height: 10em;
 }
+
+.selected {
+    fill: red;
+    stroke: red;
+}
+
+#drums {
+    width: 600px;
+    height: 600px;
+}

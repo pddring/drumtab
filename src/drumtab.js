@@ -106,6 +106,53 @@ drumtab.Note2ABC = (tabChar, instrument, duration, preChord=false) => {
     (duration>1?duration:"")
 }
 
+drumtab.selectedNotes = [];
+drumtab.playing = false;
+drumtab.pause = () => {
+    drumtab.playback.pause();
+}
+drumtab.play = (done) => {
+    if(!drumtab.playback) {
+        drumtab.playback = new ABCJS.TimingCallbacks(score, {
+            eventCallback: (e) => {
+                // clear all selected notes
+                while(drumtab.selectedNotes.length > 0) {
+                    let n = drumtab.selectedNotes.pop();
+                    n.classList.remove('selected');
+                }
+
+                // select current note
+                if(e) {
+                    for(let i = 0; i < e.elements.length; i++) {
+                        if(e.elements[i][0]) {
+                            e.elements[i][0].classList.add("selected");
+                            drumtab.selectedNotes.push(e.elements[i][0]);
+                        }
+                    }
+                }
+            },
+            beatCallback: (e) => {
+                let bar = Math.floor(drumtab.playback.currentBeat / drumtab.drums.beats);
+                let beat = drumtab.playback.currentBeat % drumtab.drums.beats;
+                if(drumtab.drums.bars[bar] && drumtab.drums.bars[bar].all[beat]) {
+                    console.log(drumtab.drums.bars[bar].all[beat]);
+                }
+                //console.log(bar, beat);
+                if(drumtab.playback.currentBeat == drumtab.playback.totalBeats) {
+                    if(done) {
+                        drumtab.playing = false;
+                        done();
+                    }
+                }
+            },
+            qpm: bpm,
+            beatSubdivisions: drumtab.drums.beats / 4
+        });
+    }
+    drumtab.playing = true;
+    drumtab.playback.start();
+}
+
 drumtab.Tab2ABC = (tab, voicing) => {
     if(voicing === undefined) {
         voicing = drumtab.voicingOptions[1];
@@ -204,6 +251,7 @@ drumtab.Tab2ABC = (tab, voicing) => {
             drums.beats = drums.bars[i].notes;
         }
     }
+    drumtab.drums = drums;
     console.log(drums);
 
     let abc = "X: 1\n" +
