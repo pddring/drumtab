@@ -226,16 +226,33 @@ drumtab.Tab2ABC = (tab, voicing) => {
             let currentVoice = 0;
             for(const [voiceName, v] of Object.entries(drums.bars[i].voicing)) {
                 let beatCount = 0;
-                for(const [beat, notes] of Object.entries(v.beats)) {
-                    if(beatCount != beat) {
-                        debugger;
+
+                // TODO: add rests until first note found
+                let firstBeat = 0;
+                for(let j = 0; j < drums.beats; j++) {
+                    if(v.beats[j] !== undefined) {
+                        firstBeat = j;
+                        beatCount = j;
+                        break;
                     }
-                    let duration = drums.beats;
-                    // find minimum note duration
-                    for(let j = 0; j < notes.length; j++) {
-                        if(notes[j].duration < duration) {
-                            duration = notes[j].duration;
-                        } 
+                }
+                if(firstBeat > 0) {
+                    abc += `z${firstBeat}`;
+                }
+                
+                for(let [beat, notes] of Object.entries(v.beats)) {
+                    beat = parseInt(beat);
+                    
+                    // merging notes from multiple instruments into a single voice may mean durations for some notes need shortening
+                    let duration = drums.beats - beat;
+                    for(let j = beat + 1; j < drums.beats; j++) {
+                        if(v.beats[j] !== undefined) {
+                            duration = j - beat;
+                            break;
+                        }
+                    }
+                    for(let j = 0; j < notes.length; j++) {                      
+                        notes[j].duration = duration;
                     }
 
                     for(let j = 0; j < notes.length; j++) {
