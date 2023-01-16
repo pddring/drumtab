@@ -181,6 +181,7 @@ drumtab.play = (done) => {
                     if(drumtab.playback.currentBeat == drumtab.playback.totalBeats) {
                         if(done) {
                             drumtab.playing = false;
+                            drumtab.playback = undefined;
                             done();
                         }
                     }
