@@ -37,11 +37,13 @@ HH|x-x-x-x-x-x-x-x-||
     </div>
     <button id="btn-play-stop">Play</button>
     
-    <div id="drums">
-    </div>
+    <canvas id="drums" width="600" height="600">
+    </canvas>
     <script src="lib/abcjs-basic-min.js"></script> 
+    <script src="media/jdd200/kit.js"></script>
     <script src="drumtab.js"></script> 
     <script>
+        drumtab.init("drums");
         const eTab = document.getElementById("tab");
         const eAbc = document.getElementById("abc");
         const eScore = document.getElementById("score");

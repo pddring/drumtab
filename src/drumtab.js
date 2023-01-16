@@ -91,6 +91,40 @@ drumtab.voicingOptions = [
     }
 ];
 
+
+drumtab.init = (kitid) => {
+    const canvas = document.getElementById(kitid);
+    kit.ctx = canvas.getContext("2d");
+    kit.image = new Image();
+    kit.image.onload = () => {
+        canvas.width = kit.image.naturalWidth;
+        canvas.height = kit.image.naturalHeight;
+        kit.ctx.drawImage(kit.image, 0,0);
+        kit.draw();        
+    }
+    kit.image.src=kit.url;
+}
+
+kit.draw = (parts) => {
+    let ctx = kit.ctx;
+    kit.ctx.drawImage(kit.image, 0,0);
+    if(parts) {
+        Object.keys(parts).forEach((k) => {
+            s = kit.zones[k];     
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "red";   
+            ctx.beginPath();
+            ctx.ellipse(s.x + (s.w / 2), s.y + (s.h / 2), s.w / 2, s.h / 2, s.angle, 0, 2 * Math.PI);
+            ctx.fillStyle = s.colour;
+            ctx.fill();
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 5;
+            ctx.stroke();
+        });
+    }
+
+}
+
 drumtab.Note2ABC = (tabChar, instrument, duration, preChord=false) => {
     // sometimes (e.g. flams) there's part of the ABC notation which needs to be written before a chord []
     if(preChord) {
@@ -132,21 +166,29 @@ drumtab.play = (done) => {
                 }
             },
             beatCallback: (e) => {
-                let bar = Math.floor(drumtab.playback.currentBeat / drumtab.drums.beats);
-                let beat = drumtab.playback.currentBeat % drumtab.drums.beats;
-                if(drumtab.drums.bars[bar] && drumtab.drums.bars[bar].all[beat]) {
-                    console.log(drumtab.drums.bars[bar].all[beat]);
-                }
-                //console.log(bar, beat);
-                if(drumtab.playback.currentBeat == drumtab.playback.totalBeats) {
-                    if(done) {
-                        drumtab.playing = false;
-                        done();
+                if(drumtab.playback.currentBeat % 2 == 1) {
+                    // all sounds off
+                    kit.draw();
+                } else {
+                    // some sounds might be on
+                    let bar = Math.floor(drumtab.playback.currentBeat / (drumtab.drums.beats * 2));
+                    let beat = (drumtab.playback.currentBeat / 2) % drumtab.drums.beats;
+                    if(drumtab.drums.bars[bar] && drumtab.drums.bars[bar].all[beat]) {
+                        console.log(drumtab.drums.bars[bar].all[beat]);
+                        kit.draw(drumtab.drums.bars[bar].all[beat]);
+                    }
+                    //console.log(bar, beat);
+                    if(drumtab.playback.currentBeat == drumtab.playback.totalBeats) {
+                        if(done) {
+                            drumtab.playing = false;
+                            done();
+                        }
                     }
                 }
+                
             },
             qpm: bpm,
-            beatSubdivisions: drumtab.drums.beats / 4
+            beatSubdivisions: drumtab.drums.beats / 2
         });
     }
     drumtab.playing = true;
