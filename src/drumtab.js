@@ -108,6 +108,7 @@ drumtab.init = (kitid) => {
 kit.draw = (parts) => {
     let ctx = kit.ctx;
     kit.ctx.drawImage(kit.image, 0,0);
+    ctx.save();
     if(parts) {
         Object.keys(parts).forEach((k) => {
             s = kit.zones[k];     
@@ -121,6 +122,14 @@ kit.draw = (parts) => {
             ctx.lineWidth = 5;
             ctx.stroke();
         });
+    }
+    ctx.restore();
+    ctx.font = "48px serif";
+    // show timings
+    if(drumtab.playback) {
+        let bar = 1 + Math.floor(drumtab.playback.currentBeat / (drumtab.drums.beats * 2));
+        let beat = 1 + Math.floor((drumtab.playback.currentBeat / 8) % drumtab.drums.beats);
+        ctx.fillText(`${drumtab.repeatCount}:${bar}:${beat}`, 0, 48);
     }
 
 }
@@ -145,7 +154,12 @@ drumtab.playing = false;
 drumtab.pause = () => {
     drumtab.playback.pause();
 }
-drumtab.play = (done) => {
+drumtab.repeatCount = 1;
+drumtab.repeatTotal = 1;
+
+drumtab.play = (repeatCount, done) => {
+    drumtab.repeatCount = 1;
+    drumtab.repeatTotal = repeatCount;
     if(!drumtab.playback) {
         drumtab.playback = new ABCJS.TimingCallbacks(score, {
             eventCallback: (e) => {
@@ -182,7 +196,15 @@ drumtab.play = (done) => {
                         if(done) {
                             drumtab.playing = false;
                             drumtab.playback = undefined;
-                            done();
+                            if(drumtab.repeatCount < drumtab.repeatTotal) {
+                                let r = drumtab.repeatCount;
+                                console.log(`repeat ${drumtab.repeatCount} / ${drumtab.repeatTotal}`);
+                                drumtab.play(repeatCount, done);
+                                drumtab.repeatCount = r+1;
+                            } else {
+                                console.log("done repeating");
+                                done();
+                            }
                         }
                     }
                 }

@@ -6,7 +6,37 @@
     <body>
         <h1>DrumTab</h1>
         <p>Interactive drum practice tool</p>
-        <h2>Tab</h2>
+        
+
+    <h2>Score</h2>    
+    <div id="main">       
+        <div class="controls">
+            <button id="btn-slower">-</button>
+            <input id="bpm" value="60">
+            <button id="btn-faster">+</button>
+            <button id="btn-play-stop">Play</button>
+            <select id="repeat">
+                <option value="1">No repeat</option>
+                <option value="2">x2</option>
+                <option value="4">x4</option>
+                <option value="8">x8</option>
+                <option value="16" selected>x16</option>
+                <option value="32">x32</option>
+                <option value="64">x64</option>
+            </select>
+        </div>
+
+        <div id="score"></div>
+
+        <canvas id="drums" width="600" height="600">
+        </canvas>
+    </div>
+    
+
+    
+    
+
+    <h2>Tab</h2>
         <p>Type out or copy your drum tab here</p>
 <textarea id="tab">
 HH|x-x-x-x-x-x-x-x-|
@@ -25,20 +55,6 @@ HH|x-x-x-x-x-x-x-x-|
 <textarea id="abc">
 
 </textarea>
-
-    <h2>Score</h2>
-    <p>The ABC should generate a musical score here</p>
-    <div id="score"></div>
-    
-    <div>
-        <button id="btn-slower">-</button>
-        <input id="bpm" value="60">
-        <button id="btn-faster">+</button>
-    </div>
-    <button id="btn-play-stop">Play</button>
-    
-    <canvas id="drums" width="600" height="600">
-    </canvas>
     <script src="lib/abcjs-basic-min.js"></script> 
     <script src="media/jdd200/kit.js"></script>
     <script src="drumtab.js"></script> 
@@ -50,6 +66,8 @@ HH|x-x-x-x-x-x-x-x-|
         const eVoicing = document.getElementById("voicing");
         const ePlayStop = document.getElementById("btn-play-stop");
         const eBPM = document.getElementById("bpm");
+        const eRepeat = document.getElementById("repeat");
+
         eBPM.addEventListener("change", e => {
             bpm = parseInt(eBPM.value);
             updateBPM();
@@ -78,7 +96,8 @@ HH|x-x-x-x-x-x-x-x-|
                 ePlayStop.innerText = "Resume";
             } else {
                 ePlayStop.innerText = "Stop";
-                drumtab.play(e => {
+                let repeatCount = parseInt(eRepeat.value);
+                drumtab.play(repeatCount, e => {
                     ePlayStop.innerText = "Play";
                 });
             }

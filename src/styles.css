@@ -21,3 +21,21 @@ body {
     width: 600px;
     height: 600px;
 }
+
+#main {
+    text-align: center;;
+}
+
+#btn-slower {
+    background-color: red;
+}
+
+#btn-faster {
+    background-color: green;
+}
+
+.controls button,input,select {
+    padding: 1em;
+    border-radius: 1em;
+    text-align: center;
+}
