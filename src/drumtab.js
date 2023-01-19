@@ -91,6 +91,33 @@ drumtab.voicingOptions = [
     }
 ];
 
+drumtab.save = () => {
+    let s = JSON.stringify(drumtab.options);
+    let compressed = LZString.compressToEncodedURIComponent (s);
+    window.location = "index.html?t=" + compressed;
+}
+
+drumtab.load = () => {
+    const query = window.location.search;
+    const params = new URLSearchParams(query);
+    const compressed = params.get('t');
+    let options = {
+        tab: `HH|x-x-x-x-x-x-x-x-|
+ S|----o-------o---|
+ B|O-------o-------|
+  1 + 2 + 3 + 4 +`,
+        voicing: 1
+    }
+    try {
+        let s = LZString.decompressFromEncodedURIComponent(compressed);
+        options = JSON.parse(s);
+    } catch (error){
+        console.log("Invalid url - setting default options");
+    }
+    
+    return options;
+}
+
 
 drumtab.init = (kitid) => {
     const canvas = document.getElementById(kitid);
@@ -219,6 +246,10 @@ drumtab.play = (repeatCount, done) => {
 }
 
 drumtab.Tab2ABC = (tab, voicing) => {
+    drumtab.options = {
+        tab: tab,
+        voicing: voicing
+    }
     if(voicing === undefined) {
         voicing = drumtab.voicingOptions[1];
     }

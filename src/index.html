@@ -4,11 +4,6 @@
         <title>DrumTab</title>
         <link rel="stylesheet" href="styles.css">
     <body>
-        <h1>DrumTab</h1>
-        <p>Interactive drum practice tool</p>
-        
-
-    <h2>Score</h2>    
     <div id="main">       
         <div class="controls">
             <button id="btn-slower">-</button>
@@ -24,6 +19,13 @@
                 <option value="32">x32</option>
                 <option value="64">x64</option>
             </select>
+
+            <select id="voicing">
+                <option value="0">Single voice</option>
+                <option value="1" selected>Hands and feet</option>
+                <option value="2">Cymbals and drums</option>
+            </select>
+            <button id="btn-save">Save</button>
         </div>
 
         <div id="score"></div>
@@ -39,23 +41,15 @@
     <h2>Tab</h2>
         <p>Type out or copy your drum tab here</p>
 <textarea id="tab">
-HH|x-x-x-x-x-x-x-x-|
- S|----o-------o---|
- B|O-------o-------|
-   1 + 2 + 3 + 4 +
 </textarea>
-<select id="voicing">
-    <option value="0">Single voice</option>
-    <option value="1" selected>Hands and feet</option>
-    <option value="2">Cymbals and drums</option>
-</select>
 
     <h2>ABC</h2>
-    <p>This will (eventually) be auto generated from the drum tab</p>
+    <p>This should be auto generated from the drum tab (included for debugging here)</p>
 <textarea id="abc">
 
 </textarea>
     <script src="lib/abcjs-basic-min.js"></script> 
+    <script src="lib/lz-string.min.js"></script>
     <script src="media/jdd200/kit.js"></script>
     <script src="drumtab.js"></script> 
     <script>
@@ -67,6 +61,12 @@ HH|x-x-x-x-x-x-x-x-|
         const ePlayStop = document.getElementById("btn-play-stop");
         const eBPM = document.getElementById("bpm");
         const eRepeat = document.getElementById("repeat");
+        const eSave = document.getElementById("btn-save");
+
+        let o = drumtab.load();
+        eTab.value = o.tab;
+
+        eSave.addEventListener("click", drumtab.save);
 
         eBPM.addEventListener("change", e => {
             bpm = parseInt(eBPM.value);
