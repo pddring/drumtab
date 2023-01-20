@@ -106,7 +106,9 @@ drumtab.load = () => {
  S|----o-------o---|
  B|O-------o-------|
   1 + 2 + 3 + 4 +`,
-        voicing: 1
+        voicing: 1,
+        repeat: 16,
+        bpm: 60
     }
     try {
         let s = LZString.decompressFromEncodedURIComponent(compressed);
@@ -186,6 +188,7 @@ drumtab.repeatTotal = 1;
 
 drumtab.play = (repeatCount, done) => {
     drumtab.repeatCount = 1;
+    drumtab.options.repeat = repeatCount;
     drumtab.repeatTotal = repeatCount;
     if(!drumtab.playback) {
         drumtab.playback = new ABCJS.TimingCallbacks(score, {
@@ -237,7 +240,7 @@ drumtab.play = (repeatCount, done) => {
                 }
                 
             },
-            qpm: bpm,
+            qpm: drumtab.options.bpm,
             beatSubdivisions: drumtab.drums.beats / 2
         });
     }
@@ -245,14 +248,22 @@ drumtab.play = (repeatCount, done) => {
     drumtab.playback.start();
 }
 
-drumtab.Tab2ABC = (tab, voicing) => {
-    drumtab.options = {
-        tab: tab,
-        voicing: voicing
+drumtab.options = {
+    tab: "",
+    voicing: 1,
+    bpm: 60,
+    repeat: 16
+}
+
+drumtab.Tab2ABC = (tab, voicingIndex) => {
+    drumtab.options.tab = tab;
+    if(voicingIndex === undefined) {
+        voicingIndex = drumtab.options.voicing;
     }
-    if(voicing === undefined) {
-        voicing = drumtab.voicingOptions[1];
-    }
+    let voicing = drumtab.voicingOptions[voicingIndex];
+
+    drumtab.options.voicing = voicingIndex;
+    
     let lines = tab.split("\n");
     let drums = {
         bars: []

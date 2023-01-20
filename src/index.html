@@ -27,9 +27,9 @@
             </select>
             <button id="btn-save">Save</button>
         </div>
-
+        <h2>Score<button class="toggle" data-toggle="score">+/-</button></h2>
         <div id="score"></div>
-
+        <h2>Drums<button class="toggle" data-toggle="drums">+/-</button></h2>
         <canvas id="drums" width="600" height="600">
         </canvas>
     </div>
@@ -38,12 +38,12 @@
     
     
 
-    <h2>Tab</h2>
+    <h2>Tab<button class="toggle" data-toggle="tab">+/-</button></h2>
         <p>Type out or copy your drum tab here</p>
 <textarea id="tab">
 </textarea>
 
-    <h2>ABC</h2>
+    <h2>ABC<button class="toggle" data-toggle="abc">+/-</button></h2>
     <p>This should be auto generated from the drum tab (included for debugging here)</p>
 <textarea id="abc">
 
@@ -63,8 +63,19 @@
         const eRepeat = document.getElementById("repeat");
         const eSave = document.getElementById("btn-save");
 
+        document.querySelectorAll(".toggle").forEach((toggle) => {
+            const id = toggle.dataset.toggle;
+            toggle.addEventListener("click", (e) => {
+                const eToggle = document.getElementById(id);
+                const visible = eToggle.style.display != "none";
+                eToggle.style.display = visible?"none":"initial";
+            });
+            
+        });
         let o = drumtab.load();
         eTab.value = o.tab;
+        eRepeat.value = o.repeat;
+        eBPM.value = o.bpm;
 
         eSave.addEventListener("click", drumtab.save);
 
@@ -88,6 +99,7 @@
         
         function updateBPM() {
             eBPM.value = bpm;
+            drumtab.options.bpm = bpm;
         }
         
         ePlayStop.addEventListener("click", e=> {
@@ -105,8 +117,11 @@
 
         eTab.addEventListener("input", updateABC);
         eAbc.addEventListener("input", updateScore);
+        eRepeat.addEventListener("change", (e) => {
+            drumtab.options.repeat = e.currentTarget.value;
+        });
         eVoicing.addEventListener("change", (e => {
-            voicing = drumtab.voicingOptions[e.currentTarget.value];
+            drumtab.options.voicing = e.currentTarget.value;
             updateABC();
         }));
 
