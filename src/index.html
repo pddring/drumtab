@@ -20,6 +20,10 @@
                 <option value="64">x64</option>
             </select>
 
+            <label class="switch">
+                <input id="speedup" type="checkbox">Speed up
+            </label>
+
             <select id="voicing">
                 <option value="0">Single voice</option>
                 <option value="1" selected>Hands and feet</option>
@@ -62,6 +66,7 @@
         const eBPM = document.getElementById("bpm");
         const eRepeat = document.getElementById("repeat");
         const eSave = document.getElementById("btn-save");
+        const eSpeedup = document.getElementById("speedup");
 
         document.querySelectorAll(".toggle").forEach((toggle) => {
             const id = toggle.dataset.toggle;
@@ -72,35 +77,39 @@
             });
             
         });
-        let o = drumtab.load();
-        eTab.value = o.tab;
-        eRepeat.value = o.repeat;
-        eBPM.value = o.bpm;
-        eVoicing.value = o.voicing;
+
+        // load settings
+        drumtab.load();
+        eTab.value = drumtab.options.tab;
+        eRepeat.value = drumtab.options.repeat;
+        eBPM.value = drumtab.options.bpm;
+        eVoicing.value = drumtab.options.voicing;
+        eSpeedup.checked = drumtab.options.speedup;
 
         eSave.addEventListener("click", drumtab.save);
+
+        eSpeedup.addEventListener("change", (e) => {
+            drumtab.options.speedup = e.currentTarget.checked;
+        });
 
         eBPM.addEventListener("change", e => {
             bpm = parseInt(eBPM.value);
             updateBPM();
         });
         document.getElementById("btn-faster").addEventListener("click", e => {
-            bpm += 5;
+            drumtab.options.bpm += 5;
             updateBPM();
         });
 
         document.getElementById("btn-slower").addEventListener("click", e => {
-            bpm -= 5;
+            drumtab.options.bpm -= 5;
             updateBPM();
         });
 
-        var voicing = undefined;
         let playing = false;
-        let bpm = 60;
         
         function updateBPM() {
-            eBPM.value = bpm;
-            drumtab.options.bpm = bpm;
+            eBPM.value = drumtab.options.bpm;
         }
         
         ePlayStop.addEventListener("click", e=> {
@@ -128,7 +137,7 @@
 
         function updateABC() {
             let tab = eTab.value;
-            eAbc.value = drumtab.Tab2ABC(tab, voicing);
+            eAbc.value = drumtab.Tab2ABC(tab, drumtab.options.voicing);
             updateScore();
         }
         var selectedNotes = [];

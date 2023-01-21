@@ -43,3 +43,11 @@ body {
 h2 {
     text-align: left;
 }
+
+#tab,#abc {
+    display: none;
+}
+
+.toggle {
+    float: right;
+}

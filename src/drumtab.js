@@ -108,6 +108,7 @@ drumtab.load = () => {
   1 + 2 + 3 + 4 +`,
         voicing: 1,
         repeat: 16,
+        speedup: false,
         bpm: 60
     }
     try {
@@ -116,6 +117,7 @@ drumtab.load = () => {
     } catch (error){
         console.log("Invalid url - setting default options");
     }
+    drumtab.options = options;
     
     return options;
 }
@@ -133,6 +135,8 @@ drumtab.init = (kitid) => {
     }
     kit.image.src=kit.url;
 }
+
+drumtab.timeSignature = [4,4];
 
 kit.draw = (parts) => {
     let ctx = kit.ctx;
@@ -156,8 +160,10 @@ kit.draw = (parts) => {
     ctx.font = "48px serif";
     // show timings
     if(drumtab.playback) {
-        let bar = 1 + Math.floor(drumtab.playback.currentBeat / (drumtab.drums.beats * 2));
-        let beat = 1 + Math.floor((drumtab.playback.currentBeat / 8) % drumtab.drums.beats);
+
+        let beatsInBar = drumtab.drums.beats * 2;
+        let bar = 1 + Math.floor(drumtab.playback.currentBeat / (beatsInBar));
+        let beat = 1 + Math.floor((drumtab.playback.currentBeat * drumtab.timeSignature[0]/ (beatsInBar)) % (drumtab.timeSignature[0]));
         ctx.fillText(`${drumtab.repeatCount}:${bar}:${beat}`, 0, 48);
     }
 
@@ -215,13 +221,13 @@ drumtab.play = (repeatCount, done) => {
                     kit.draw();
                 } else {
                     // some sounds might be on
-                    let bar = Math.floor(drumtab.playback.currentBeat / (drumtab.drums.beats * 2));
-                    let beat = (drumtab.playback.currentBeat / 2) % drumtab.drums.beats;
+                    let beatsInBar = drumtab.drums.beats * 2;
+                    let bar = Math.floor(drumtab.playback.currentBeat / (beatsInBar));
+                    let beat = (drumtab.playback.currentBeat / 2) % (beatsInBar);
                     if(drumtab.drums.bars[bar] && drumtab.drums.bars[bar].all[beat]) {
-                        console.log(drumtab.drums.bars[bar].all[beat]);
+                        console.log(drumtab.drums.beats, drumtab.playback.currentBeat, bar, beat, drumtab.drums.bars[bar].all[beat]);
                         kit.draw(drumtab.drums.bars[bar].all[beat]);
-                    }
-                    //console.log(bar, beat);
+                    } 
                     if(drumtab.playback.currentBeat == drumtab.playback.totalBeats) {
                         if(done) {
                             drumtab.playing = false;
@@ -232,8 +238,25 @@ drumtab.play = (repeatCount, done) => {
                                 drumtab.play(repeatCount, done);
                                 drumtab.repeatCount = r+1;
                             } else {
-                                console.log("done repeating");
-                                done();
+                                if(drumtab.options.speedup) {
+                                    console.log("Speeding up");
+                                    drumtab.options.bpm += 10;
+                                    
+                                    if(drumtab.options.bpm > 120) {
+                                        drumtab.options.bpm = 120;
+                                        console.log("done speed up");
+                                        done();
+                                    } else {
+                                        let r = drumtab.repeatCount;
+                                        drumtab.repeatCount = 0;
+                                        console.log(`repeat ${drumtab.repeatCount} / ${drumtab.repeatTotal}`);
+                                        drumtab.play(repeatCount, done);
+                                    }
+                                    if(updateBPM) updateBPM();
+                                } else {
+                                    console.log("done repeating");
+                                    done();
+                                }
                             }
                         }
                     }
@@ -252,7 +275,8 @@ drumtab.options = {
     tab: "",
     voicing: 1,
     bpm: 60,
-    repeat: 16
+    repeat: 16,
+    speedup: false
 }
 
 drumtab.Tab2ABC = (tab, voicingIndex) => {
@@ -261,7 +285,6 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
         voicingIndex = drumtab.options.voicing;
     }
     let voicing = drumtab.voicingOptions[voicingIndex];
-
     drumtab.options.voicing = voicingIndex;
     
     let lines = tab.split("\n");
