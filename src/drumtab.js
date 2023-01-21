@@ -23,7 +23,35 @@ let midi= {
             long: "closed hi hat",
             midi: "Gb2",
             stave: "ng"
-        }
+        },
+        floortom: {
+            short: "FT",
+            aliases: ["F", "T3"],
+            long: "floor tom",
+            midi: "G3",
+            stave: "A"
+        },
+        tom1: {
+            short: "T1",
+            aliases: ["T", "HT"],
+            long: "high tom",
+            midi: "C4",
+            stave: "e"
+        },
+        tom2: {
+            short: "T2",
+            aliases: ["LT"],
+            long: "low tom",
+            midi: "B3",
+            stave: "d"
+        },
+        ride: {
+            short: "RD",
+            aliases: ["RC", "RD", "R"],
+            long: "ride",
+            midi: "Eb4",
+            stave: "nf"
+        },
     },
 
     lookup: (alias) => {
@@ -144,16 +172,20 @@ kit.draw = (parts) => {
     ctx.save();
     if(parts) {
         Object.keys(parts).forEach((k) => {
-            s = kit.zones[k];     
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = "red";   
-            ctx.beginPath();
-            ctx.ellipse(s.x + (s.w / 2), s.y + (s.h / 2), s.w / 2, s.h / 2, s.angle, 0, 2 * Math.PI);
-            ctx.fillStyle = s.colour;
-            ctx.fill();
-            ctx.strokeStyle = "red";
-            ctx.lineWidth = 5;
-            ctx.stroke();
+            s = kit.zones[k];    
+            if(s) { 
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = "red";   
+                ctx.beginPath();
+                ctx.ellipse(s.x + (s.w / 2), s.y + (s.h / 2), s.w / 2, s.h / 2, s.angle, 0, 2 * Math.PI);
+                ctx.fillStyle = s.colour;
+                ctx.fill();
+                ctx.strokeStyle = "red";
+                ctx.lineWidth = 5;
+                ctx.stroke();
+            } else {
+                console.error("Unknown drum part", parts, k);
+            }
         });
     }
     ctx.restore();
@@ -223,11 +255,18 @@ drumtab.play = (repeatCount, done) => {
                     // some sounds might be on
                     let beatsInBar = drumtab.drums.beats * 2;
                     let bar = Math.floor(drumtab.playback.currentBeat / (beatsInBar));
-                    let beat = (drumtab.playback.currentBeat / 2) % (beatsInBar);
+                    let beat = (drumtab.playback.currentBeat / 2) % (beatsInBar/2);
+                    let d = {
+                        beat: beat,
+                        bar: bar,
+                        c: drumtab.playback.currentBeat,
+                        repeat: repeatCount
+                    }
                     if(drumtab.drums.bars[bar] && drumtab.drums.bars[bar].all[beat]) {
-                        console.log(drumtab.drums.beats, drumtab.playback.currentBeat, bar, beat, drumtab.drums.bars[bar].all[beat]);
+                        d.notes = drumtab.drums.bars[bar].all[beat];
                         kit.draw(drumtab.drums.bars[bar].all[beat]);
                     } 
+                    console.log(d);
                     if(drumtab.playback.currentBeat == drumtab.playback.totalBeats) {
                         if(done) {
                             drumtab.playing = false;
@@ -296,13 +335,14 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
     for(let i = 0; i < lines.length; i++) {
         
         // extract part names
-        let m = lines[i].match(/^\s*([A-Za-z]+)\s*:?\s*\|/);
+        let m = lines[i].match(/^\s*([A-Za-z0-9]+)\s*:?\s*\|/);
         if(m) {
             let instrument = midi.lookup(m[1]);
             let voice = {
                 instrument: instrument.short,
                 bars: []
             }
+            console.log(voice, m);
 
             // iterate through each bar
             let bars = lines[i].split("|").slice(1);
@@ -388,7 +428,8 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
     "M: 4/4\n" +
     "L: 1/" + drums.beats + "\n" +
     "U:n=!style=x!\n" +
-    "K:perc\n"
+    "K:perc\n" +
+    "%%stretchlast\n"
 
     for(let i = 0; i < drums.bars.length; i++) {
         // check if bar is empty
