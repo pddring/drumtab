@@ -52,6 +52,20 @@ let midi= {
             midi: "Eb4",
             stave: "nf"
         },
+        crash: {
+            short: "CC",
+            aliases: ["C", "C1", "CR"],
+            long: "crash cymbal",
+            midi: "Db2",
+            stave: "na"
+        },
+        hihatpedal: {
+            short: "HF",
+            aliases: ["HHF", "FH"],
+            long: "hi hat foot",
+            midi: "A",
+            stave: "nD"
+        },
     },
 
     lookup: (alias) => {
@@ -204,15 +218,45 @@ kit.draw = (parts) => {
 drumtab.Note2ABC = (tabChar, instrument, duration, preChord=false) => {
     // sometimes (e.g. flams) there's part of the ABC notation which needs to be written before a chord []
     if(preChord) {
-        return (tabChar == "f"?
-            '{' + instrument.stave +  // flam
+        return ((tabChar.toUpperCase() == tabChar && tabChar != "#")?"!^!":"") + // Accent
+        (tabChar == "#"?"!breath!":"") +  // choke
+        (tabChar.toLowerCase() == "s"?'"splash"': "") + // splash
+        (tabChar.toLowerCase() == "c"?'"china"': "") + // china
+        (tabChar.toLowerCase() == "g"?'"<("">)"':'') + // ghost note
+        
+        (tabChar.toLowerCase() == "f"? // flam
+            '{' + instrument.stave +  
+            (duration>1?duration:"") + 
+            '}'
+        :'') +
+
+        (tabChar.toLowerCase() == "b"? "~":"") + 
+        
+        (tabChar.toLowerCase() == "d"? // drag
+            '{' + instrument.stave +
+            (duration>1?duration:"") +
+            instrument.stave + 
             (duration>1?duration:"") + 
             '}'
         :'');
     }
-
-    return (tabChar == "O"||tabChar == "X"?"!^!":"") + // Accent
-    instrument.stave + 
+    if(instrument.long == "ride") {
+        instrument.stave = tabChar.toUpperCase() == "B"? "mf":"nf";
+    } 
+    if(instrument.long == "crash cymbal") {
+        switch(tabChar.toLowerCase()) {
+            case 's': // splash
+                instrument.stave = 'mb';    
+                break;
+            case 'c': // china
+                instrument.stave = 'nb';
+                break;
+            default: // crash
+                instrument.stave = "na";
+                break;
+        } 
+    }
+    return instrument.stave + 
     (duration>1?duration:"")
 }
 
@@ -428,6 +472,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
     "M: 4/4\n" +
     "L: 1/" + drums.beats + "\n" +
     "U:n=!style=x!\n" +
+    "U:m=!style=harmonic!\n" +
     "K:perc\n" +
     "%%stretchlast\n"
 
