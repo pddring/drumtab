@@ -230,7 +230,7 @@ drumtab.Note2ABC = (tabChar, instrument, duration, preChord=false) => {
             '}'
         :'') +
 
-        (tabChar.toLowerCase() == "b"? "~":"") + 
+        ((tabChar.toLowerCase() == "b" && instrument.long != "ride")? "~":"") + 
         
         (tabChar.toLowerCase() == "d"? // drag
             '{' + instrument.stave +
