@@ -223,6 +223,8 @@ drumtab.Note2ABC = (tabChar, instrument, duration, preChord=false) => {
         (tabChar.toLowerCase() == "s"?'"splash"': "") + // splash
         (tabChar.toLowerCase() == "c"?'"china"': "") + // china
         (tabChar.toLowerCase() == "g"?'"<("">)"':'') + // ghost note
+        (tabChar.toLowerCase() == "l"?'"L"': '') + // Left hand sticking
+        (tabChar.toLowerCase() == "r"?'"R"': '') + // Left hand sticking
         
         (tabChar.toLowerCase() == "f"? // flam
             '{' + instrument.stave +  
