@@ -176,6 +176,13 @@ drumtab.init = (kitid) => {
         kit.draw();        
     }
     kit.image.src=kit.url;
+
+    // set up midi
+    WebMidi.enable().then((e)=> {
+        /// TODO: add midi support
+    }).catch((e) => {
+        console.error(e);
+    });
 }
 
 drumtab.timeSignature = [4,4];
@@ -376,15 +383,10 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
     let drums = {
         bars: []
     }
+    let text = "";
 
     // go through each line of tab
-    for(let i = 0; i < lines.length; i++) {
-        // whitespace means add on to the end
-        let m = lines[i].match(/^\s*$/);
-        if(m) {
-
-        }
-        
+    for(let i = 0; i < lines.length; i++) {        
 
         // extract part names
         m = lines[i].match(/^\s*([A-Za-z0-9]+)\s*:?\s*\|/);
@@ -418,7 +420,8 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                             skip: 0,
                             all: {},
                             voicing: {},
-                            before: ""
+                            before: "",
+                            after: ""
                         }
                         for(let k = 0; k < voicing.names.length; k++) {
                             newBar.voicing[voicing.names[k]] = {
@@ -428,7 +431,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                             };
                         }
                         if(newPart) {
-                            newBar.before = "\n";
+                            newBar.before = "\n" 
                         }
                         drums.bars.push(newBar);
                     }
@@ -474,6 +477,9 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                     drums.bars[j + startBar].parts[voice.instrument] = voice.bars[j];
                 }
             }
+        } else {
+            text += lines[i];
+            
         }
     }
 
@@ -493,6 +499,9 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
     "U:m=!style=harmonic!\n" +
     "K:perc\n" +
     "%%stretchlast\n"
+    if(text.length > 0) {
+        abc += '"' + text + '"';
+    }
 
     for(let i = 0; i < drums.bars.length; i++) {
         abc += drums.bars[i].before;
@@ -572,7 +581,8 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                 
             }
         }
-        abc += "|";
+        abc += drums.bars[i].after;
+        abc += "|"; 
     }
 
     return abc;
