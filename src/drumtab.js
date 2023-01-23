@@ -491,7 +491,6 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
             for(const [voiceName, v] of Object.entries(drums.bars[i].voicing)) {
                 let beatCount = 0;
 
-                // TODO: add rests until first note found
                 let firstBeat = 0;
                 for(let j = 0; j < drums.beats; j++) {
                     if(v.beats[j] !== undefined) {
@@ -541,6 +540,9 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                         
                     }
                     beatCount += duration;
+                    if(beatCount == drumtab.drums.beats / 2) {
+                        abc += " ";
+                    }
                 }
                 if(currentVoice < voiceCount) {
                     abc += "&\\";
