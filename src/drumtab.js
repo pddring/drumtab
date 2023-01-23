@@ -371,7 +371,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
     }
     let voicing = drumtab.voicingOptions[voicingIndex];
     drumtab.options.voicing = voicingIndex;
-    
+    let startBar = 0;
     let lines = tab.split("\n");
     let drums = {
         bars: []
@@ -379,32 +379,46 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
 
     // go through each line of tab
     for(let i = 0; i < lines.length; i++) {
+        // whitespace means add on to the end
+        let m = lines[i].match(/^\s*$/);
+        if(m) {
+
+        }
         
+
         // extract part names
-        let m = lines[i].match(/^\s*([A-Za-z0-9]+)\s*:?\s*\|/);
+        m = lines[i].match(/^\s*([A-Za-z0-9]+)\s*:?\s*\|/);
         if(m) {
             let instrument = midi.lookup(m[1]);
             let voice = {
                 instrument: instrument.short,
                 bars: []
             }
-            console.log(voice, m);
+            let newPart = false;
+
+            // if this part has already been defined then move on by required number of bars
+            if(drums.bars[startBar] && drums.bars[startBar].parts[instrument.short]) {
+                startBar = drums.bars.length;
+                console.log(startBar)                
+                newPart = true;
+            }
 
             // iterate through each bar
             let bars = lines[i].split("|").slice(1);
             for(let j = 0; j < bars.length; j++) {
                 let bar = bars[j].trim();
                 if(bar.length > 0) {
-                    voice.bars[j] = bar;
+                    voice.bars[j + startBar] = bar;
                     
                     // store bar for all parts
-                    while(drums.bars.length < bars.length - 1) {
+                    while(drums.bars.length < startBar + bars.length - 1) {
                         let newBar = {
                             parts: {},
                             notes: bar.length,
                             skip: 0,
                             all: {},
-                            voicing: {}
+                            voicing: {},
+                            before: ""
                         }
                         for(let k = 0; k < voicing.names.length; k++) {
                             newBar.voicing[voicing.names[k]] = {
@@ -412,6 +426,9 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                                 parts: {},
                                 abc: ""
                             };
+                        }
+                        if(newPart) {
+                            newBar.before = "\n";
                         }
                         drums.bars.push(newBar);
                     }
@@ -427,20 +444,20 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                                     break;
                                 }
                             }
-                            if(drums.bars[j].all[k] === undefined) {
-                                drums.bars[j].all[k] = {};
+                            if(drums.bars[j + startBar].all[k] === undefined) {
+                                drums.bars[j + startBar].all[k] = {};
                             }
-                            drums.bars[j].all[k][voice.instrument] = bar[k];
+                            drums.bars[j + startBar].all[k][voice.instrument] = bar[k];
                             
                             // split into different stave voices
                             for(let l = 0; l < voicing.voices.length; l++) {
                                 if(voicing.voices[l].includes(voice.instrument)) {
-                                    if(drums.bars[j].voicing[voicing.names[l]].parts[voice.instrument] === undefined) {
-                                        drums.bars[j].voicing[voicing.names[l]].parts[voice.instrument] = {};
+                                    if(drums.bars[j + startBar].voicing[voicing.names[l]].parts[voice.instrument] === undefined) {
+                                        drums.bars[j + startBar].voicing[voicing.names[l]].parts[voice.instrument] = {};
                                     }
-                                    drums.bars[j].voicing[voicing.names[l]].parts[voice.instrument][k] = bar[k];
-                                    if(drums.bars[j].voicing[voicing.names[l]].beats[k] === undefined) {
-                                        drums.bars[j].voicing[voicing.names[l]].beats[k] = [];
+                                    drums.bars[j + startBar].voicing[voicing.names[l]].parts[voice.instrument][k] = bar[k];
+                                    if(drums.bars[j + startBar].voicing[voicing.names[l]].beats[k] === undefined) {
+                                        drums.bars[j + startBar].voicing[voicing.names[l]].beats[k] = [];
                                     }
                                     let note = {};
                                     note = {
@@ -449,12 +466,12 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                                         duration: duration,
                                         abc: drumtab.Note2ABC(bar[k], instrument, duration)
                                     }
-                                    drums.bars[j].voicing[voicing.names[l]].beats[k].push(note);
+                                    drums.bars[j + startBar].voicing[voicing.names[l]].beats[k].push(note);
                                 }
                             }
                         }
                     }                        
-                    drums.bars[j].parts[voice.instrument] = voice.bars[j];
+                    drums.bars[j + startBar].parts[voice.instrument] = voice.bars[j];
                 }
             }
         }
@@ -468,7 +485,6 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
         }
     }
     drumtab.drums = drums;
-    console.log(drums);
 
     let abc = "X: 1\n" +
     "M: 4/4\n" +
@@ -479,6 +495,8 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
     "%%stretchlast\n"
 
     for(let i = 0; i < drums.bars.length; i++) {
+        abc += drums.bars[i].before;
+
         // check if bar is empty
         if(Object.keys(drums.bars[i].all).length == 0) {
             abc += `z${drums.beats}`
@@ -544,20 +562,18 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                         abc += " ";
                     }
                 }
+                currentVoice++;
                 if(currentVoice < voiceCount) {
                     abc += "&\\";
                 } else {
-                    abc += "|";
+                    abc += " ";
                 }
                 
-                currentVoice++;
+                
             }
         }
         abc += "|";
     }
 
-    /// todo: not quite there yet!
-    "|:ngngngngngngngng&\\\n" +
-    "!^!F2c2F2c2:|"
     return abc;
 }
