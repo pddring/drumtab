@@ -144,7 +144,9 @@
         var selectedNotes = [];
         function updateScore() {
             let abc = eAbc.value;
-            score = ABCJS.renderAbc("score", abc)[0];
+            score = ABCJS.renderAbc("score", abc, {
+                add_classes: true
+            })[0];
 
         }
 

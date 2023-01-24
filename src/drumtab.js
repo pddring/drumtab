@@ -1,13 +1,13 @@
 let midi= {
     NOTE_ON: 9,
     NOTE_OFF: 8,
-    NOTE_NAMES: ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'],
+    NOTE_NAMES: ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'],
     DRUMS: {
         snare: {
             short: "SN",
             aliases: ["S"],
             long: "snare",
-            midi: "D2",
+            midi: "C#2",
             stave: "c"
         }, 
         bass: {
@@ -21,51 +21,61 @@ let midi= {
             short: "HH",
             aliases: ["H"],
             long: "closed hi hat",
-            midi: "Gb2",
+            midi: "F#2",
             stave: "ng"
         },
         floortom: {
             short: "FT",
             aliases: ["F", "T3"],
             long: "floor tom",
-            midi: "G3",
+            midi: "G2",
             stave: "A"
         },
         tom1: {
             short: "T1",
             aliases: ["T", "HT"],
             long: "high tom",
-            midi: "C4",
+            midi: "C3",
             stave: "e"
         },
         tom2: {
             short: "T2",
             aliases: ["LT"],
             long: "low tom",
-            midi: "B3",
+            midi: "A2",
             stave: "d"
         },
         ride: {
             short: "RD",
             aliases: ["RC", "RD", "R"],
             long: "ride",
-            midi: "Eb4",
+            midi: "B3",
             stave: "nf"
         },
         crash: {
             short: "CC",
             aliases: ["C", "C1", "CR"],
             long: "crash cymbal",
-            midi: "Db2",
+            midi: "A3",
             stave: "na"
         },
         hihatpedal: {
             short: "HF",
             aliases: ["HHF", "FH"],
             long: "hi hat foot",
-            midi: "A",
+            midi: "G#2",
             stave: "nD"
         },
+    },
+
+    lookupMidi: (note) => {
+        let d = {};
+        Object.keys(midi.DRUMS).forEach(key => {
+            if(midi.DRUMS[key].midi == note) {
+                d = midi.DRUMS[key];
+            }
+        });
+        return d;
     },
 
     lookup: (alias) => {
@@ -178,16 +188,38 @@ drumtab.init = (kitid) => {
     kit.image.src=kit.url;
 
     // set up midi
-    WebMidi.enable().then((e)=> {
+    WebMidi.enable().then(()=> {
+        WebMidi.inputs.forEach((device, index) => {
+            console.log(index, device.manufacturer, device.name);
+            device.addListener("noteon", (e) => {
+                //console.log(e, e.note.name, e.note.number, e.note.accidental);
+                let m = e.note.name + (e.note.accidental?e.note.accidental:"") + (e.note.octave);
+                let hit = midi.lookupMidi(m);
+                let parts = {};
+                parts[hit.short] = "1";                
+                kit.draw(parts, "played");
+            }, {
+                channels: [10]
+            });
+        });
         /// TODO: add midi support
     }).catch((e) => {
         console.error(e);
     });
 }
 
+drumtab.playnote = (note) => {
+    WebMidi.outputs.forEach((device, index) => {
+        let channel = device.channels[10];
+        channel.playNote(note);
+    });
+}
+
 drumtab.timeSignature = [4,4];
 
-kit.draw = (parts) => {
+kit.draw = (parts, type) => {
+
+    let colour = (type == "played"?"green":"red")
     let ctx = kit.ctx;
     kit.ctx.drawImage(kit.image, 0,0);
     ctx.save();
@@ -196,12 +228,12 @@ kit.draw = (parts) => {
             s = kit.zones[k];    
             if(s) { 
                 ctx.shadowBlur = 10;
-                ctx.shadowColor = "red";   
+                ctx.shadowColor = colour;   
                 ctx.beginPath();
                 ctx.ellipse(s.x + (s.w / 2), s.y + (s.h / 2), s.w / 2, s.h / 2, s.angle, 0, 2 * Math.PI);
                 ctx.fillStyle = s.colour;
                 ctx.fill();
-                ctx.strokeStyle = "red";
+                ctx.strokeStyle = colour;
                 ctx.lineWidth = 5;
                 ctx.stroke();
             } else {
@@ -318,8 +350,13 @@ drumtab.play = (repeatCount, done) => {
                     if(drumtab.drums.bars[bar] && drumtab.drums.bars[bar].all[beat]) {
                         d.notes = drumtab.drums.bars[bar].all[beat];
                         kit.draw(drumtab.drums.bars[bar].all[beat]);
+                        Object.keys(d.notes).forEach((key) => {
+                            let note = midi.lookup(key);
+                            drumtab.playnote(note.midi);
+                        });
                     } 
-                    console.log(d);
+                    //console.log(d);
+                    
                     if(drumtab.playback.currentBeat == drumtab.playback.totalBeats) {
                         if(done) {
                             drumtab.playing = false;
@@ -478,7 +515,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                 }
             }
         } else {
-            text += lines[i];
+            //text += lines[i];
             
         }
     }
