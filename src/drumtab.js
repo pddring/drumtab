@@ -212,6 +212,7 @@ drumtab.playnote = (note) => {
     WebMidi.outputs.forEach((device, index) => {
         let channel = device.channels[10];
         channel.playNote(note);
+        console.log("Played", note, "on", device);
     });
 }
 
@@ -353,6 +354,7 @@ drumtab.play = (repeatCount, done) => {
                         Object.keys(d.notes).forEach((key) => {
                             let note = midi.lookup(key);
                             drumtab.playnote(note.midi);
+                            console.log(note.midi);
                         });
                     } 
                     //console.log(d);
