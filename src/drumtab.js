@@ -185,7 +185,10 @@ drumtab.init = (kitid) => {
         kit.ctx.drawImage(kit.image, 0,0);
         kit.draw();        
     }
-    kit.image.src=kit.url;
+    kit.image.src=`media/${kit.name}/${kit.imageURL}`;
+
+    // set up audio
+    /// TODO:
 
     // set up midi
     WebMidi.enable().then(()=> {
@@ -197,7 +200,7 @@ drumtab.init = (kitid) => {
                 let hit = midi.lookupMidi(m);
                 let parts = {};
                 parts[hit.short] = "1";                
-                kit.draw(parts, "played");
+                //kit.draw(parts, "played");
             }, {
                 channels: [10]
             });
@@ -206,6 +209,38 @@ drumtab.init = (kitid) => {
     }).catch((e) => {
         console.error(e);
     });
+}
+
+drumtab.step = (progress) => {
+    if(!progress) {
+        progress = {
+            bar: 0, // bar starting from 0
+            note: 0, // index of note within bar (not beat)
+            beat: 0
+        }
+    }
+    $('.abcjs-note').removeClass('selected');
+
+    let bar = drumtab.drums.bars[progress.bar];
+    if(bar && bar.all) {
+        let noteCount = 0;
+        for(progress.beat = 0; progress.beat < bar.notes; progress.beat++) {
+            if(bar.all[progress.beat]) {
+                if(noteCount == progress.note) {
+                    //console.log(progress, bar.all[progress.beat]);
+                    kit.draw(bar.all[progress.beat]);
+                    $(`.abcjs-n${progress.note}.abcjs-mm${progress.bar}.abcjs-v0`).addClass('selected');
+                    progress.note++;
+                    return progress;
+                } else {
+                    noteCount++;
+                }
+            }
+        }
+    }
+
+
+
 }
 
 drumtab.playnote = (note) => {
@@ -218,9 +253,9 @@ drumtab.playnote = (note) => {
 
 drumtab.timeSignature = [4,4];
 
-kit.draw = (parts, type) => {
+kit.draw = (parts, played) => {
 
-    let colour = (type == "played"?"green":"red")
+    let colour = "red";
     let ctx = kit.ctx;
     kit.ctx.drawImage(kit.image, 0,0);
     ctx.save();
@@ -351,11 +386,25 @@ drumtab.play = (repeatCount, done) => {
                     if(drumtab.drums.bars[bar] && drumtab.drums.bars[bar].all[beat]) {
                         d.notes = drumtab.drums.bars[bar].all[beat];
                         kit.draw(drumtab.drums.bars[bar].all[beat]);
-                        Object.keys(d.notes).forEach((key) => {
-                            let note = midi.lookup(key);
-                            drumtab.playnote(note.midi);
-                            console.log(note.midi);
-                        });
+                        // play midi notes
+                        if(drumtab.options.midi) {
+                            Object.keys(d.notes).forEach((key) => {
+                                let note = midi.lookup(key);
+                                drumtab.playnote(note.midi);
+                                console.log(note.midi);
+                            });
+                        }
+                        // play audio notes
+                        if(drumtab.options.audio) 
+                        {
+                            d.sounds = drumtab.drums.bars[bar].sounds[beat];
+                            Object.keys(d.sounds).forEach((key) => {
+                                d.sounds[key].pause();
+                                d.sounds[key].currentTime = 0;
+                                d.sounds[key].play();
+                                console.log(d.sounds[key].volume, key);
+                            });
+                        }
                     } 
                     //console.log(d);
                     
@@ -458,6 +507,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                             notes: bar.length,
                             skip: 0,
                             all: {},
+                            sounds: {},
                             voicing: {},
                             before: "",
                             after: ""
@@ -489,7 +539,16 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                             if(drums.bars[j + startBar].all[k] === undefined) {
                                 drums.bars[j + startBar].all[k] = {};
                             }
+                            if(drums.bars[j + startBar].sounds[k] == undefined) {
+                                drums.bars[j + startBar].sounds[k] = {};
+                            }
                             drums.bars[j + startBar].all[k][voice.instrument] = bar[k];
+                            let sndURL = `media/${kit.name}/${kit.zones[voice.instrument].sound}`;
+                            
+                            // create audio elements
+                            drums.bars[j + startBar].sounds[k][voice.instrument] = new Audio(sndURL);
+                            let accent = bar[k].toUpperCase() == bar[k];
+                            drums.bars[j + startBar].sounds[k][voice.instrument].volume = accent?1:0.2;
                             
                             // split into different stave voices
                             for(let l = 0; l < voicing.voices.length; l++) {

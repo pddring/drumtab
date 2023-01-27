@@ -1,6 +1,6 @@
 var kit = {
     name: "jdd200",
-    url: "media/jdd200/kit.jpg",
+    imageURL: "kit.jpg",
     zones: {
         "SN": {
             x: 173,
@@ -9,7 +9,8 @@ var kit = {
             h: 30,
             shape: "ellipse",
             angle: 0,
-            colour: "#ABC45E"
+            colour: "#ABC45E",
+            sound: "SN.wav"
         },
         "T1": {
             x: 237,
@@ -18,7 +19,8 @@ var kit = {
             h: 52,
             shape: "ellipse",
             angle: 0,
-            colour: "#914698"
+            colour: "#914698",
+            sound: "T1.wav"
         },
         "T2": {
             x: 341,
@@ -27,7 +29,8 @@ var kit = {
             h: 52,
             shape: "ellipse",
             angle: 0,
-            colour: "#068DBE"
+            colour: "#068DBE",
+            sound: "T2.wav"
         },
         "FT": {
             x: 421,
@@ -36,7 +39,8 @@ var kit = {
             h: 33,
             shape: "ellipse",
             angle: 0,
-            colour: "#993E3D"
+            colour: "#993E3D",
+            sound: "FT.wav"
         },
         "HF": {
             x: 115,
@@ -45,7 +49,8 @@ var kit = {
             h: 33,
             shape: "ellipse",
             angle: 0,
-            colour: "#C9CBCA"
+            colour: "#C9CBCA",
+            sound: "HF.wav"
         },
         "BD": {
             x: 306,
@@ -54,7 +59,8 @@ var kit = {
             h: 33,
             shape: "ellipse",
             angle: 0,
-            colour: "#C9CBCA"
+            colour: "#C9CBCA",
+            sound: "BD.wav"
         },
         "HH": {
             x: 85,
@@ -63,7 +69,8 @@ var kit = {
             h: 33,
             shape: "ellipse",
             angle: 0.09,
-            colour: "#ECE47E"
+            colour: "#ECE47E",
+            sound: "HH.wav"
         },
         "CC": {
             x: 169,
@@ -72,7 +79,8 @@ var kit = {
             h: 46,
             shape: "ellipse",
             angle: 0.35,
-            colour: "#ECE47E"
+            colour: "#ECE47E",
+            sound: "CC.wav"
         },
         "RD": {
             x: 365,
@@ -81,7 +89,8 @@ var kit = {
             h: 46,
             shape: "ellipse",
             angle: -0.09,
-            colour: "#ECE47E"
+            colour: "#ECE47E",
+            sound: "RD.wav"
         }
     }
 }

@@ -37,10 +37,6 @@
         <canvas id="drums" width="600" height="600">
         </canvas>
     </div>
-    
-
-    
-    
 
     <h2>Tab<button class="toggle" data-toggle="tab">+/-</button></h2>
         <p>Type out or copy your drum tab here</p>
@@ -52,6 +48,20 @@
 <textarea id="abc">
 
 </textarea>
+
+    <h2>Settings<button class="toggle" data-toggle="settings">+/-</button></h2>
+    <div id="settings">
+        <label class="switch">
+            <input id="audio" type="checkbox">Play sounds (Audio)
+        </label>
+        <label class="switch">
+            <input id="midi" type="checkbox">Play sounds (Midi)
+        </label>
+    </div>
+<script
+src="https://code.jquery.com/jquery-3.6.3.min.js"
+integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU="
+crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
     <script src="lib/abcjs-basic-min.js"></script> 
     <script src="lib/lz-string.min.js"></script>
@@ -68,6 +78,8 @@
         const eRepeat = document.getElementById("repeat");
         const eSave = document.getElementById("btn-save");
         const eSpeedup = document.getElementById("speedup");
+        const ePlayAudio = document.getElementById("audio");
+        const ePlayMidi = document.getElementById("midi");
 
         document.querySelectorAll(".toggle").forEach((toggle) => {
             const id = toggle.dataset.toggle;
@@ -86,11 +98,19 @@
         eBPM.value = drumtab.options.bpm;
         eVoicing.value = drumtab.options.voicing;
         eSpeedup.checked = drumtab.options.speedup;
+        ePlayAudio.checked = drumtab.options.audio;
 
         eSave.addEventListener("click", drumtab.save);
 
         eSpeedup.addEventListener("change", (e) => {
             drumtab.options.speedup = e.currentTarget.checked;
+        });
+
+        ePlayAudio.addEventListener("change", (e) => {
+            drumtab.options.audio = e.currentTarget.checked;
+        });
+        ePlayMidi.addEventListener("change", (e) => {
+            drumtab.options.midi = e.currentTarget.checked;
         });
 
         eBPM.addEventListener("change", e => {
