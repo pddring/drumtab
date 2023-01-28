@@ -131,6 +131,7 @@ crossorigin="anonymous"></script>
         
         function updateBPM() {
             eBPM.value = drumtab.options.bpm;
+            drumtab.setBPM(drumtab.options.bpm);
         }
         
         ePlayStop.addEventListener("click", e=> {

@@ -348,7 +348,7 @@ drumtab.repeatTotal = 1;
 drumtab.play = (repeatCount, done) => {
     drumtab.repeatCount = 1;
     drumtab.options.repeat = repeatCount;
-    drumtab.repeatTotal = repeatCount;
+    drumtab.repeatTotal = repeatCount;    
     if(!drumtab.playback) {
         drumtab.playback = new ABCJS.TimingCallbacks(score, {
             eventCallback: (e) => {
@@ -402,7 +402,7 @@ drumtab.play = (repeatCount, done) => {
                                 d.sounds[key].pause();
                                 d.sounds[key].currentTime = 0;
                                 d.sounds[key].play();
-                                console.log(d.sounds[key].volume, key);
+                                //console.log(d.sounds[key].volume, key);
                             });
                         }
                     } 
@@ -447,8 +447,21 @@ drumtab.play = (repeatCount, done) => {
             beatSubdivisions: drumtab.drums.beats / 2
         });
     }
+    drumtab.playback.done = done;
     drumtab.playing = true;
     drumtab.playback.start();
+}
+
+drumtab.setBPM = (bpm) => {
+    if(drumtab.playing) {
+        let beats = drumtab.playback.currentBeat;
+        let done = drumtab.playback.done;
+        drumtab.playback.stop();
+        drumtab.playing = false;
+        drumtab.playback = undefined;
+        drumtab.play(drumtab.repeatTotal, done);
+        drumtab.playback.setProgress(beats / 2, "beats");
+    }
 }
 
 drumtab.options = {
@@ -472,9 +485,15 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
         bars: []
     }
     let text = "";
+    let newPart = false;
 
     // go through each line of tab
     for(let i = 0; i < lines.length; i++) {        
+        m = lines[i].match(/^\s*$/);
+        if(m) {
+            newPart = true;
+            startBar = drums.bars.length;
+        }
 
         // extract part names
         m = lines[i].match(/^\s*([A-Za-z0-9]+)\s*:?\s*\|/);
@@ -483,14 +502,6 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
             let voice = {
                 instrument: instrument.short,
                 bars: []
-            }
-            let newPart = false;
-
-            // if this part has already been defined then move on by required number of bars
-            if(drums.bars[startBar] && drums.bars[startBar].parts[instrument.short]) {
-                startBar = drums.bars.length;
-                console.log(startBar)                
-                newPart = true;
             }
 
             // iterate through each bar
@@ -519,10 +530,15 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                                 abc: ""
                             };
                         }
-                        if(newPart) {
-                            newBar.before = "\n" 
-                        }
                         drums.bars.push(newBar);
+                    }
+                    if(newPart && j == 0) {
+                        drums.bars[j + startBar].before = "\n";
+                    }
+
+                    if(text.length > 0) {
+                        drums.bars[startBar].before += '"' + text + '"';
+                        text = "";
                     }
                     
                     // iterate through each note in the bar
@@ -575,9 +591,9 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                     drums.bars[j + startBar].parts[voice.instrument] = voice.bars[j];
                 }
             }
+            newPart = false;
         } else {
-            //text += lines[i];
-            
+            text = lines[i];
         }
     }
 
@@ -671,7 +687,12 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                 }
                 currentVoice++;
                 if(currentVoice < voiceCount) {
-                    abc += "&\\";
+                    if(drums.bars[i + 1] && drums.bars[i + 1].before.length > 0) {
+                        // new line
+                    } else {
+                        abc += "&\\";
+                    }
+                    
                 } else {
                     abc += " ";
                 }
