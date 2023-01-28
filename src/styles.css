@@ -20,6 +20,10 @@ body {
 #drums {
     width: 600px;
     height: 600px;
+    position: sticky;
+    bottom: 0px;
+    opacity: 0.3;
+    z-index: -1;
 }
 
 #main {

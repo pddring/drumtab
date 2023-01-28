@@ -482,9 +482,13 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
     let startBar = 0;
     let lines = tab.split("\n");
     let drums = {
-        bars: []
+        bars: [],
+        lines: [],
+        voices: voicing.names
     }
+    console.log(voicing);
     let text = "";
+    let lineCount = 0;
     let newPart = false;
 
     // go through each line of tab
@@ -533,7 +537,9 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                         drums.bars.push(newBar);
                     }
                     if(newPart && j == 0) {
+                        drums.lines[lineCount] = bars.length - 1;
                         drums.bars[j + startBar].before = "\n";
+                        lineCount++;
                     }
 
                     if(text.length > 0) {
@@ -589,6 +595,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                         }
                     }                        
                     drums.bars[j + startBar].parts[voice.instrument] = voice.bars[j];
+                    drums.lines[lineCount] = bars.length - 1;
                 }
             }
             newPart = false;
@@ -596,6 +603,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
             text = lines[i];
         }
     }
+    
 
     // get max number of beats in a bar
     drums.beats = 1;
