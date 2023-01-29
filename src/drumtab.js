@@ -341,9 +341,59 @@ drumtab.selectedNotes = [];
 drumtab.playing = false;
 drumtab.pause = () => {
     drumtab.playback.pause();
+    drumtab.playing  = false;
 }
 drumtab.repeatCount = 1;
 drumtab.repeatTotal = 1;
+
+drumtab.updateScore = (id, abc) => {
+    score = ABCJS.renderAbc(id, abc, {
+        add_classes: true,
+        clickListener: (element, tuneNumber, classes, analysis, drag, mouseevent) => {
+            let bar = analysis.measure;
+            for(let i = 0; i < analysis.line; i++) {
+                bar += drumtab.drums.lines[i];
+            }
+            let beat = bar * drumtab.drums.beats;
+            let m = classes.match(/abcjs-v(\d+) abcjs-n(\d+)/);
+            if(m) {
+                let n = {
+                    bar: bar,
+                    voiceId: parseInt(m[1]),
+                    noteId: parseInt(m[2])
+                }
+                n.notes = drumtab.drums.bars[n.bar].voicing[drumtab.drums.voices[n.voiceId]].beats;
+                let noteCount = 0;
+                for(let i = 0; i < drumtab.drums.beats; i++) {
+                    if(n.notes[i]) {
+                        noteCount++;
+                        if(noteCount > n.noteId) {
+                            n.beat = i;
+                            break;
+                        }
+                    }
+                }
+                beat += n.beat;
+                let notes = drumtab.drums.bars[bar].voicing[drumtab.drums.voices[n.voiceId]].beats[beat % drumtab.drums.beats];
+                let selected = {
+
+                }
+                notes.forEach((note) => {
+                    selected[note.instrument] = note.style;
+                });
+                kit.draw(selected);
+            }
+            drumtab.startFrom = beat * 4 / drumtab.drums.beats;
+            if(drumtab.playback) {
+                drumtab.playback.setProgress(drumtab.startFrom, "beats");
+            }
+            
+        }
+    })[0];
+
+}
+
+drumtab.startFrom = 0;
 
 drumtab.play = (repeatCount, done) => {
     drumtab.repeatCount = 1;
@@ -373,6 +423,7 @@ drumtab.play = (repeatCount, done) => {
                     // all sounds off
                     kit.draw();
                 } else {
+                    drumtab.startFrom = 0;
                     // some sounds might be on
                     let beatsInBar = drumtab.drums.beats * 2;
                     let bar = Math.floor(drumtab.playback.currentBeat / (beatsInBar));
@@ -450,6 +501,10 @@ drumtab.play = (repeatCount, done) => {
     drumtab.playback.done = done;
     drumtab.playing = true;
     drumtab.playback.start();
+    if(drumtab.startFrom > 0) {
+        drumtab.playback.setProgress(drumtab.startFrom, "beats");
+    }
+    
 }
 
 drumtab.setBPM = (bpm) => {
@@ -486,7 +541,6 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
         lines: [],
         voices: voicing.names
     }
-    console.log(voicing);
     let text = "";
     let lineCount = 0;
     let newPart = false;

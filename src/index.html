@@ -148,7 +148,9 @@ crossorigin="anonymous"></script>
         });
 
         eTab.addEventListener("input", updateABC);
-        eAbc.addEventListener("input", updateScore);
+        eAbc.addEventListener("input", () => {
+            drumtab.updateScore("score", eAbc.value);
+        });
         eRepeat.addEventListener("change", (e) => {
             drumtab.options.repeat = e.currentTarget.value;
         });
@@ -160,49 +162,11 @@ crossorigin="anonymous"></script>
         function updateABC() {
             let tab = eTab.value;
             eAbc.value = drumtab.Tab2ABC(tab, drumtab.options.voicing);
-            updateScore();
-        }
-        var selectedNotes = [];
-        function updateScore() {
-            let abc = eAbc.value;
-            score = ABCJS.renderAbc("score", abc, {
-                add_classes: true,
-                clickListener: (element, tuneNumber, classes, analysis, drag, mouseevent) => {
-                    let bar = analysis.measure;
-                    for(let i = 0; i < analysis.line; i++) {
-                        bar += drumtab.drums.lines[i];
-                    }
-                    let beat = bar * drumtab.drums.beats;
-                    let m = classes.match(/abcjs-v(\d+) abcjs-n(\d+)/);
-                    if(m) {
-                        let n = {
-                            bar: bar,
-                            voiceId: parseInt(m[1]),
-                            noteId: parseInt(m[2])
-                        }
-                        n.notes = drumtab.drums.bars[n.bar].voicing[drumtab.drums.voices[n.voiceId]].beats;
-                        let noteCount = 0;
-                        for(let i = 0; i < drumtab.drums.beats; i++) {
-                            if(n.notes[i]) {
-                                noteCount++;
-                                if(noteCount > n.noteId) {
-                                    n.beat = i;
-                                    break;
-                                }
-                            }
-                        }
-                        beat += n.beat;
-                    }
-                    if(drumtab.playback) {
-                        drumtab.playback.setProgress(beat, "beats");
-                    }
-                }
-            })[0];
-
+            drumtab.updateScore("score", eAbc.value);
         }
 
         updateABC();
-        updateScore();
+        drumtab.updateScore("score", eAbc.value);
 
 
     </script>
