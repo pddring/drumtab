@@ -34,8 +34,8 @@
         <h2>Score<button class="toggle" data-toggle="score">+/-</button></h2>
         <div id="score"></div>
         <h2>Drums<button class="toggle" data-toggle="drums">+/-</button></h2>
-        <canvas id="drums" width="600" height="600">
-        </canvas>
+        <div id="drums" width="600" height="600">
+        </div>
     </div>
 
     <h2>Tab<button class="toggle" data-toggle="tab">+/-</button></h2>
@@ -66,6 +66,7 @@ crossorigin="anonymous"></script>
     <script src="lib/abcjs-basic-min.js"></script> 
     <script src="lib/lz-string.min.js"></script>
     <script src="media/jdd200/kit.js"></script>
+    <script src="lib/phaser.min.js"></script>
     <script src="drumtab.js"></script> 
     <script>
         drumtab.init("drums");

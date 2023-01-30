@@ -177,15 +177,51 @@ drumtab.load = () => {
 
 drumtab.init = (kitid) => {
     const canvas = document.getElementById(kitid);
-    kit.ctx = canvas.getContext("2d");
-    kit.image = new Image();
-    kit.image.onload = () => {
-        canvas.width = kit.image.naturalWidth;
-        canvas.height = kit.image.naturalHeight;
-        kit.ctx.drawImage(kit.image, 0,0);
-        kit.draw();        
+    let config = {
+        width: 600,
+        height: 600,
+        type: Phaser.WEBGL,
+        parent: kitid,
+        scene: {
+            preload: function()  {
+                kit.sounds = [];
+                Object.keys(kit.zones).forEach((zone) => {
+                    this.load.audio(zone, [`media/${kit.name}/${kit.zones[zone].sound}`]);
+                });
+                this.load.image('kit', `media/${kit.name}/${kit.imageURL}`);
+                this.load.bitmapFont('font', 'media/font.png', 'media/font.xml');
+            },
+
+            create: function() {
+                this.add.image(0, 0, 'kit').setOrigin(0,0);
+                Object.keys(kit.zones).forEach((zone) => {
+                    kit.sounds[zone] = this.sound.add(zone);
+                });
+                
+                kit.text = new Phaser.GameObjects.BitmapText(this, 500, 50, 'font', "");
+                this.add.existing(kit.text);
+                kit.shapes = [];
+                Object.keys(kit.zones).forEach((zone) => {
+                    let s = kit.zones[zone];
+                    let e = new Phaser.GameObjects.Ellipse(this, s.x + (s.w / 2), s.y + (s.h / 2), s.w, s.h, s.colour);
+                    e.rotation = s.angle;
+                    e.isStroked = true;
+                    e.lineWidth = 5;
+                    e.strokeColor = 0xFF0000;
+                    kit.shapes[zone] = e;
+                    this.add.existing(e);
+                    e.alpha = 0;
+                });
+            },
+
+            update: function() {
+                Object.keys(kit.zones).forEach((zone) => {
+                    kit.shapes[zone].alpha *= 0.8;
+                });
+            }
+        }
     }
-    kit.image.src=`media/${kit.name}/${kit.imageURL}`;
+    let game = new Phaser.Game(config);
 
     // set up audio
     /// TODO:
@@ -254,38 +290,19 @@ drumtab.playnote = (note) => {
 drumtab.timeSignature = [4,4];
 
 kit.draw = (parts, played) => {
-
-    let colour = "red";
-    let ctx = kit.ctx;
-    kit.ctx.drawImage(kit.image, 0,0);
-    ctx.save();
     if(parts) {
-        Object.keys(parts).forEach((k) => {
-            s = kit.zones[k];    
-            if(s) { 
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = colour;   
-                ctx.beginPath();
-                ctx.ellipse(s.x + (s.w / 2), s.y + (s.h / 2), s.w / 2, s.h / 2, s.angle, 0, 2 * Math.PI);
-                ctx.fillStyle = s.colour;
-                ctx.fill();
-                ctx.strokeStyle = colour;
-                ctx.lineWidth = 5;
-                ctx.stroke();
-            } else {
-                console.error("Unknown drum part", parts, k);
-            }
+        Object.keys(parts).forEach((zone) => {
+            kit.shapes[zone].alpha = 1;
         });
     }
-    ctx.restore();
-    ctx.font = "48px serif";
+
     // show timings
     if(drumtab.playback) {
 
         let beatsInBar = drumtab.drums.beats * 2;
         let bar = 1 + Math.floor(drumtab.playback.currentBeat / (beatsInBar));
         let beat = 1 + Math.floor((drumtab.playback.currentBeat * drumtab.timeSignature[0]/ (beatsInBar)) % (drumtab.timeSignature[0]));
-        ctx.fillText(`${drumtab.repeatCount}:${bar}:${beat}`, 0, 48);
+        kit.text.text = `${drumtab.repeatCount}:${bar}:${beat}`;
     }
 
 }
@@ -448,13 +465,23 @@ drumtab.play = (repeatCount, done) => {
                         // play audio notes
                         if(drumtab.options.audio) 
                         {
-                            d.sounds = drumtab.drums.bars[bar].sounds[beat];
+                            // create audio elements
+                            Object.keys(d.notes).forEach((key) => {
+                                let accent = d.notes[key] == d.notes[key].toUpperCase();
+                                kit.sounds[key].volume = accent?1:0.2;
+                                kit.sounds[key].stop();
+                                kit.sounds[key].play();
+                            });
+                            //let accent = bar[k].toUpperCase() == bar[k];
+                            //let volume = accent?1:0.2;
+
+                            /*d.sounds = drumtab.drums.bars[bar].sounds[beat];
                             Object.keys(d.sounds).forEach((key) => {
                                 d.sounds[key].pause();
                                 d.sounds[key].currentTime = 0;
                                 d.sounds[key].play();
                                 //console.log(d.sounds[key].volume, key);
-                            });
+                            });*/
                         }
                     } 
                     //console.log(d);
@@ -615,16 +642,8 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                             if(drums.bars[j + startBar].all[k] === undefined) {
                                 drums.bars[j + startBar].all[k] = {};
                             }
-                            if(drums.bars[j + startBar].sounds[k] == undefined) {
-                                drums.bars[j + startBar].sounds[k] = {};
-                            }
-                            drums.bars[j + startBar].all[k][voice.instrument] = bar[k];
-                            let sndURL = `media/${kit.name}/${kit.zones[voice.instrument].sound}`;
                             
-                            // create audio elements
-                            drums.bars[j + startBar].sounds[k][voice.instrument] = new Audio(sndURL);
-                            let accent = bar[k].toUpperCase() == bar[k];
-                            drums.bars[j + startBar].sounds[k][voice.instrument].volume = accent?1:0.2;
+                            drums.bars[j + startBar].all[k][voice.instrument] = bar[k];
                             
                             // split into different stave voices
                             for(let l = 0; l < voicing.voices.length; l++) {

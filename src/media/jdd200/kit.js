@@ -9,7 +9,7 @@ var kit = {
             h: 30,
             shape: "ellipse",
             angle: 0,
-            colour: "#ABC45E",
+            colour: 0xABC45E,
             sound: "SN.wav"
         },
         "T1": {
@@ -19,7 +19,7 @@ var kit = {
             h: 52,
             shape: "ellipse",
             angle: 0,
-            colour: "#914698",
+            colour: 0x914698,
             sound: "T1.wav"
         },
         "T2": {
@@ -29,7 +29,7 @@ var kit = {
             h: 52,
             shape: "ellipse",
             angle: 0,
-            colour: "#068DBE",
+            colour: 0x068DBE,
             sound: "T2.wav"
         },
         "FT": {
@@ -39,7 +39,7 @@ var kit = {
             h: 33,
             shape: "ellipse",
             angle: 0,
-            colour: "#993E3D",
+            colour: 0x993E3D,
             sound: "FT.wav"
         },
         "HF": {
@@ -49,7 +49,7 @@ var kit = {
             h: 33,
             shape: "ellipse",
             angle: 0,
-            colour: "#C9CBCA",
+            colour: 0xC9CBCA,
             sound: "HF.wav"
         },
         "BD": {
@@ -59,7 +59,7 @@ var kit = {
             h: 33,
             shape: "ellipse",
             angle: 0,
-            colour: "#C9CBCA",
+            colour: 0xC9CBCA,
             sound: "BD.wav"
         },
         "HH": {
@@ -69,7 +69,7 @@ var kit = {
             h: 33,
             shape: "ellipse",
             angle: 0.09,
-            colour: "#ECE47E",
+            colour: 0xECE47E,
             sound: "HH.wav"
         },
         "CC": {
@@ -79,7 +79,7 @@ var kit = {
             h: 46,
             shape: "ellipse",
             angle: 0.35,
-            colour: "#ECE47E",
+            colour: 0xECE47E,
             sound: "CC.wav"
         },
         "RD": {
@@ -89,7 +89,7 @@ var kit = {
             h: 46,
             shape: "ellipse",
             angle: -0.09,
-            colour: "#ECE47E",
+            colour: 0xECE47E,
             sound: "RD.wav"
         }
     }
