@@ -18,11 +18,9 @@ body {
 }
 
 #drums {
-    width: 600px;
-    height: 600px;
     position: sticky;
     bottom: 0px;
-    opacity: 0.3;
+    opacity: 0.5;
     z-index: -1;
 }
 

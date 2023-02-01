@@ -210,6 +210,9 @@ drumtab.init = (kitid) => {
                     e.strokeColor = 0xFF0000;
                     kit.shapes[zone] = e;
                     this.add.existing(e);
+                    e.on('pointerdown', function(pointer) {
+                        console.log(pointer);
+                    });
                     e.alpha = 0;
                 });
             },
