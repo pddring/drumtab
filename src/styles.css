@@ -46,10 +46,18 @@ h2 {
     text-align: left;
 }
 
-#tab,#abc,#settings {
+#abc {
     display: none;
 }
 
 .toggle {
     float: right;
+}
+
+.logo {
+    bottom: 1em;
+    right: 1em;
+    position: fixed;
+    width: 100px;
+    z-index:-2;
 }
