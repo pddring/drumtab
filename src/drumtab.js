@@ -200,7 +200,11 @@ drumtab.init = (kitid) => {
                 
                 kit.text = new Phaser.GameObjects.BitmapText(this, 500, 50, 'font', "");
                 this.add.existing(kit.text);
-                kit.shapes = [];
+                kit.shapes = {
+                    played: {}
+                };
+                kit.g = this.add.graphics();
+
                 Object.keys(kit.zones).forEach((zone) => {
                     let s = kit.zones[zone];
                     let e = new Phaser.GameObjects.Ellipse(this, s.x + (s.w / 2), s.y + (s.h / 2), s.w, s.h, s.colour);
@@ -208,18 +212,19 @@ drumtab.init = (kitid) => {
                     e.isStroked = true;
                     e.lineWidth = 5;
                     e.strokeColor = 0xFF0000;
-                    kit.shapes[zone] = e;
+                    kit.shapes['played'][zone] = e;
                     this.add.existing(e);
-                    e.on('pointerdown', function(pointer) {
-                        console.log(pointer);
+                    e.setInteractive();
+                    e.zone = zone;
+                    e.on('pointerdown', function(p) {
+                        drumtab.onHit(this.zone);
                     });
-                    e.alpha = 0;
                 });
             },
 
             update: function() {
                 Object.keys(kit.zones).forEach((zone) => {
-                    kit.shapes[zone].alpha *= 0.8;
+                    kit.shapes['played'][zone].alpha *= 0.8;
                 });
             }
         }
@@ -247,6 +252,112 @@ drumtab.init = (kitid) => {
         /// TODO: add midi support
     }).catch((e) => {
         console.error(e);
+    });
+}
+
+drumtab.onHit = function(drum, volume) {
+    kit.shapes['played'][drum].alpha = 1;
+
+    if(drumtab.playback) {
+        let beatsInBar = drumtab.drums.beats * 2;
+        let bar = Math.floor(drumtab.playback.currentBeat / (beatsInBar));
+        let beat = (drumtab.playback.currentBeat / 2) % (beatsInBar/2);
+        let d = {
+            beat: beat,
+            bar: bar,
+            c: drumtab.playback.currentBeat,
+            time: drumtab.playback.currentTime
+        }
+        
+        drumtab.analysis[drum].played.push(d);
+    }
+}
+
+drumtab.ANALYSIS_THRESHOLD_ON_TIME = 50; // 50ms before a hit is early or late
+drumtab.ANALYSIS_THRESHOLD_MISS = 100; // 50ms before a hit is early or late
+
+drumtab.analyse = () => {
+    if(!drumtab.analysis)
+        return;
+    
+    kit.g.clear()
+    Object.keys(kit.zones).forEach((zone, index) => {
+        let z = drumtab.analysis[zone];
+        z.miss = 0;
+        z.early = 0;
+        z.late = 0;
+        z.total = 0;
+        z.good = 0;
+        for(let i = 0; i < z.expected.length; i++) {
+            let t = z.expected[i].time;
+            z.expected[i].status = "miss";
+            let miss = true;
+            z.total++;
+            for(let j = 0; j < z.played.length; j++) {
+                let delta = z.played[j].time - z.expected[i].time;
+                if(Math.abs(delta) < drumtab.ANALYSIS_THRESHOLD_MISS) {
+                    miss = false;
+                    if(Math.abs(delta) < drumtab.ANALYSIS_THRESHOLD_ON_TIME) {
+                        z.expected[i].status = "on time";
+                        z.good++;
+                        z.expected[i].delta = delta;
+                    } else {
+                        z.expected[i].status = delta < 0? "early":"late";
+                        if(delta < 0) {
+                            z.early++;
+                        } else {
+                            z.late++;
+                        }
+                    }
+                }
+            }
+            if(miss) {
+                z.miss++;
+            }
+        }
+
+        let s = kit.zones[zone];
+
+        if(z.total > 0 && z.played.length > 0) {
+            // misses
+            kit.g.fillStyle(0xff0000, 1);
+            kit.g.fillRoundedRect(s.x + (s.w/2) - 50, s.y + s.h + 10, 100, 10, 5);
+
+            // on time
+            let w1 = ((z.good + z.early + z.late) / z.total) * 100;
+            kit.g.fillStyle(0x00ff00, 1);
+            kit.g.fillRoundedRect(s.x + (s.w/2) - (w1 / 2), s.y + s.h + 10, w1, 10, 5);
+
+            // early
+            w = (z.early / z.total) * 50;
+            kit.g.fillStyle(0xeeee00, 1);
+            kit.g.fillRoundedRect(s.x + (s.w/2) - (w1 / 2), s.y + s.h + 10, w, 10, 5);
+
+            // late
+            w = (z.late / z.total) * 50;
+            kit.g.fillStyle(0xeeee00, 1);
+            kit.g.fillRoundedRect(s.x + (s.w/2) + (w1 / 2) - w, s.y + s.h + 10, w, 10, 5);
+        }
+    });
+}
+
+drumtab.restartAnalysis = () => {
+    if(drumtab.analysis) {
+        drumtab.analyse();
+    }
+    drumtab.analysis = {
+    }
+
+    Object.keys(kit.zones).forEach((zone, index) => {
+        drumtab.analysis[zone] = {
+            expected: [],
+            played: [],
+            miss: 0,
+            early: 0,
+            late: 0,
+            total: 0,
+            good: 0
+        }
     });
 }
 
@@ -295,7 +406,7 @@ drumtab.timeSignature = [4,4];
 kit.draw = (parts, played) => {
     if(parts) {
         Object.keys(parts).forEach((zone) => {
-            kit.shapes[zone].alpha = 1;
+            kit.shapes['played'][zone].alpha = 1;
         });
     }
 
@@ -416,6 +527,7 @@ drumtab.updateScore = (id, abc) => {
 drumtab.startFrom = 0;
 
 drumtab.play = (repeatCount, done) => {
+    drumtab.restartAnalysis();
     drumtab.repeatCount = 1;
     drumtab.options.repeat = repeatCount;
     drumtab.repeatTotal = repeatCount;    
@@ -468,24 +580,28 @@ drumtab.play = (repeatCount, done) => {
                         // play audio notes
                         if(drumtab.options.audio) 
                         {
-                            // create audio elements
                             Object.keys(d.notes).forEach((key) => {
                                 let accent = d.notes[key] == d.notes[key].toUpperCase();
                                 kit.sounds[key].volume = accent?1:0.2;
                                 kit.sounds[key].stop();
                                 kit.sounds[key].play();
                             });
-                            //let accent = bar[k].toUpperCase() == bar[k];
-                            //let volume = accent?1:0.2;
-
-                            /*d.sounds = drumtab.drums.bars[bar].sounds[beat];
-                            Object.keys(d.sounds).forEach((key) => {
-                                d.sounds[key].pause();
-                                d.sounds[key].currentTime = 0;
-                                d.sounds[key].play();
-                                //console.log(d.sounds[key].volume, key);
-                            });*/
                         }
+
+                        // log expected notes
+                        Object.keys(d.notes).forEach((key) => {
+                            let accent = d.notes[key] == d.notes[key].toUpperCase();
+                            let beatsInBar = drumtab.drums.beats * 2;
+                            let bar = Math.floor(drumtab.playback.currentBeat / (beatsInBar));
+                            let beat = (drumtab.playback.currentBeat / 2) % (beatsInBar/2);
+                            let hit = {
+                                beat: beat,
+                                bar: bar,
+                                c: drumtab.playback.currentBeat,
+                                time: drumtab.playback.currentTime
+                            }
+                            drumtab.analysis[key].expected.push(hit);
+                        });
                     } 
                     //console.log(d);
                     

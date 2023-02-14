@@ -10,6 +10,7 @@ body {
 #score {
     width: 100%;
     height: 10em;
+    background-color: rgba(255,255,255,0.8);
 }
 
 .selected {
@@ -20,7 +21,7 @@ body {
 #drums {
     position: sticky;
     bottom: 0px;
-    opacity: 0.5;
+    opacity: 1;
     z-index: -1;
 }
 
