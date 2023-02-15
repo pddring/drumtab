@@ -8,6 +8,7 @@ let midi= {
             aliases: ["S"],
             long: "snare",
             midi: "C#2",
+            midiAliases: ["D2"],
             stave: "c"
         }, 
         bass: {
@@ -15,6 +16,7 @@ let midi= {
             aliases: ["B", "K", "KD"],
             long: "bass",
             midi: "C2",
+            midiAliases: [],
             stave: "F"
         },
         hihat: {
@@ -22,6 +24,7 @@ let midi= {
             aliases: ["H"],
             long: "closed hi hat",
             midi: "F#2",
+            midiAliases: ["A#2"],
             stave: "ng"
         },
         floortom: {
@@ -29,6 +32,7 @@ let midi= {
             aliases: ["F", "T3"],
             long: "floor tom",
             midi: "G2",
+            midiAliases: [],
             stave: "A"
         },
         tom1: {
@@ -36,6 +40,7 @@ let midi= {
             aliases: ["T", "HT"],
             long: "high tom",
             midi: "C3",
+            midiAliases: [],
             stave: "e"
         },
         tom2: {
@@ -43,6 +48,7 @@ let midi= {
             aliases: ["LT"],
             long: "low tom",
             midi: "A2",
+            midiAliases: [],
             stave: "d"
         },
         ride: {
@@ -50,6 +56,7 @@ let midi= {
             aliases: ["RC", "RD", "R"],
             long: "ride",
             midi: "B3",
+            midiAliases: ["D#3"],
             stave: "nf"
         },
         crash: {
@@ -57,6 +64,7 @@ let midi= {
             aliases: ["C", "C1", "CR"],
             long: "crash cymbal",
             midi: "A3",
+            midiAliases: ["C#3"],
             stave: "na"
         },
         hihatpedal: {
@@ -64,6 +72,7 @@ let midi= {
             aliases: ["HHF", "FH"],
             long: "hi hat foot",
             midi: "G#2",
+            midiAliases: [],
             stave: "nD"
         },
     },
@@ -71,7 +80,7 @@ let midi= {
     lookupMidi: (note) => {
         let d = {};
         Object.keys(midi.DRUMS).forEach(key => {
-            if(midi.DRUMS[key].midi == note) {
+            if(midi.DRUMS[key].midi == note || midi.DRUMS[key].midiAliases.includes(note)) {
                 d = midi.DRUMS[key];
             }
         });
@@ -201,13 +210,20 @@ drumtab.init = (kitid) => {
                 kit.text = new Phaser.GameObjects.BitmapText(this, 500, 50, 'font', "");
                 this.add.existing(kit.text);
                 kit.shapes = {
-                    played: {}
+                    played: {}, // playback
+                    hit: {}     // user hit
                 };
                 kit.g = this.add.graphics();
 
                 Object.keys(kit.zones).forEach((zone) => {
                     let s = kit.zones[zone];
-                    let e = new Phaser.GameObjects.Ellipse(this, s.x + (s.w / 2), s.y + (s.h / 2), s.w, s.h, s.colour);
+                    let e = new Phaser.GameObjects.Ellipse(this, s.x + (s.w / 2), s.y + (s.h / 2), s.w, s.h, 0x00FF00);
+                    e.rotation = s.angle;
+                    kit.shapes['hit'][zone] = e;
+                    e.alpha = 0;
+                    this.add.existing(e);
+
+                    e = new Phaser.GameObjects.Ellipse(this, s.x + (s.w / 2), s.y + (s.h / 2), s.w, s.h, s.colour);
                     e.rotation = s.angle;
                     e.isStroked = true;
                     e.lineWidth = 5;
@@ -225,6 +241,7 @@ drumtab.init = (kitid) => {
             update: function() {
                 Object.keys(kit.zones).forEach((zone) => {
                     kit.shapes['played'][zone].alpha *= 0.8;
+                    kit.shapes['hit'][zone].alpha *= 0.8;
                 });
             }
         }
@@ -243,20 +260,24 @@ drumtab.init = (kitid) => {
                 let m = e.note.name + (e.note.accidental?e.note.accidental:"") + (e.note.octave);
                 let hit = midi.lookupMidi(m);
                 let parts = {};
-                parts[hit.short] = "1";                
-                //kit.draw(parts, "played");
+                parts[hit.short] = "1";
+                if(hit.short) {
+                    drumtab.onHit(hit.short, e.rawVelocity)
+                } else {
+                    console.log("Unknown midi key: ", m);
+                }
+
             }, {
                 channels: [10]
             });
         });
-        /// TODO: add midi support
     }).catch((e) => {
         console.error(e);
     });
 }
 
 drumtab.onHit = function(drum, volume) {
-    kit.shapes['played'][drum].alpha = 1;
+    kit.shapes['hit'][drum].alpha = 1;
 
     if(drumtab.playback) {
         let beatsInBar = drumtab.drums.beats * 2;
@@ -279,7 +300,12 @@ drumtab.ANALYSIS_THRESHOLD_MISS = 100; // 50ms before a hit is early or late
 drumtab.analyse = () => {
     if(!drumtab.analysis)
         return;
-    
+    let summary = {
+        total: 0,
+        good: 0,
+        early: 0,
+        late: 0
+    }
     kit.g.clear()
     Object.keys(kit.zones).forEach((zone, index) => {
         let z = drumtab.analysis[zone];
@@ -293,6 +319,7 @@ drumtab.analyse = () => {
             z.expected[i].status = "miss";
             let miss = true;
             z.total++;
+            summary.total++;
             for(let j = 0; j < z.played.length; j++) {
                 let delta = z.played[j].time - z.expected[i].time;
                 if(Math.abs(delta) < drumtab.ANALYSIS_THRESHOLD_MISS) {
@@ -301,13 +328,18 @@ drumtab.analyse = () => {
                         z.expected[i].status = "on time";
                         z.good++;
                         z.expected[i].delta = delta;
+                        summary.good++;
+                        break;
                     } else {
                         z.expected[i].status = delta < 0? "early":"late";
                         if(delta < 0) {
                             z.early++;
+                            summary.early++;
                         } else {
                             z.late++;
+                            summary.late++;
                         }
+                        break;
                     }
                 }
             }
@@ -339,6 +371,18 @@ drumtab.analyse = () => {
             kit.g.fillRoundedRect(s.x + (s.w/2) + (w1 / 2) - w, s.y + s.h + 10, w, 10, 5);
         }
     });
+    summary.percent = Math.round(summary.good / summary.total * 100);
+    $('#score-bar').css({
+        opacity:1,
+        height:summary.percent + '%'
+    });
+    $('#score-bar-outer').css({
+        opacity:1
+    });
+    $('#score-percent').css({
+        opacity:1
+    }).text(summary.percent);
+    console.log(summary);
 }
 
 drumtab.restartAnalysis = () => {
@@ -397,7 +441,6 @@ drumtab.playnote = (note) => {
     WebMidi.outputs.forEach((device, index) => {
         let channel = device.channels[10];
         channel.playNote(note);
-        console.log("Played", note, "on", device);
     });
 }
 
@@ -574,7 +617,6 @@ drumtab.play = (repeatCount, done) => {
                             Object.keys(d.notes).forEach((key) => {
                                 let note = midi.lookup(key);
                                 drumtab.playnote(note.midi);
-                                console.log(note.midi);
                             });
                         }
                         // play audio notes
