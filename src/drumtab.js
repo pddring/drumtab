@@ -280,15 +280,8 @@ drumtab.onHit = function(drum, volume) {
     kit.shapes['hit'][drum].alpha = 1;
 
     if(drumtab.playback) {
-        let beatsInBar = drumtab.drums.beats * 2;
-        let bar = Math.floor(drumtab.playback.currentBeat / (beatsInBar));
-        let beat = (drumtab.playback.currentBeat / 2) % (beatsInBar/2);
-        let d = {
-            beat: beat,
-            bar: bar,
-            c: drumtab.playback.currentBeat,
-            time: drumtab.playback.currentTime
-        }
+        let d = drumtab.getPosition(drumtab.playback.currentBeat);
+        d.time = drumtab.playback.currentTime;
         
         drumtab.analysis[drum].played.push(d);
     }
@@ -455,11 +448,8 @@ kit.draw = (parts, played) => {
 
     // show timings
     if(drumtab.playback) {
-
-        let beatsInBar = drumtab.drums.beats * 2;
-        let bar = 1 + Math.floor(drumtab.playback.currentBeat / (beatsInBar));
-        let beat = 1 + Math.floor((drumtab.playback.currentBeat * drumtab.timeSignature[0]/ (beatsInBar)) % (drumtab.timeSignature[0]));
-        kit.text.text = `${drumtab.repeatCount}:${bar}:${beat}`;
+        let d = drumtab.getPosition(drumtab.playback.currentBeat);
+        kit.text.text = `${drumtab.repeatCount}:${1 + d.bar}:${d.count}`;
     }
 
 }
@@ -569,6 +559,19 @@ drumtab.updateScore = (id, abc) => {
 
 drumtab.startFrom = 0;
 
+drumtab.getPosition = (currentBeat) => {
+    let beatsInBar = drumtab.drums.beats * 2;
+    let bar = Math.floor(currentBeat / (beatsInBar));
+    let beat = ((currentBeat) % (beatsInBar)) / 2;
+    let d = {
+        beat: beat,
+        bar: bar,
+        c: currentBeat,
+        count: 1 + Math.floor(drumtab.timeSignature[0] * (currentBeat % beatsInBar) / beatsInBar)
+    }
+    return d;
+}
+
 drumtab.play = (repeatCount, done) => {
     drumtab.restartAnalysis();
     drumtab.repeatCount = 1;
@@ -600,18 +603,11 @@ drumtab.play = (repeatCount, done) => {
                 } else {
                     drumtab.startFrom = 0;
                     // some sounds might be on
-                    let beatsInBar = drumtab.drums.beats * 2;
-                    let bar = Math.floor(drumtab.playback.currentBeat / (beatsInBar));
-                    let beat = (drumtab.playback.currentBeat / 2) % (beatsInBar/2);
-                    let d = {
-                        beat: beat,
-                        bar: bar,
-                        c: drumtab.playback.currentBeat,
-                        repeat: repeatCount
-                    }
-                    if(drumtab.drums.bars[bar] && drumtab.drums.bars[bar].all[beat]) {
-                        d.notes = drumtab.drums.bars[bar].all[beat];
-                        kit.draw(drumtab.drums.bars[bar].all[beat]);
+                    let d = drumtab.getPosition(drumtab.playback.currentBeat);
+                    d.repeat = repeatCount;
+                    if(drumtab.drums.bars[d.bar] && drumtab.drums.bars[d.bar].all[d.beat]) {
+                        d.notes = drumtab.drums.bars[d.bar].all[d.beat];
+                        kit.draw(drumtab.drums.bars[d.bar].all[d.beat]);
                         // play midi notes
                         if(drumtab.options.midi) {
                             Object.keys(d.notes).forEach((key) => {
@@ -633,15 +629,8 @@ drumtab.play = (repeatCount, done) => {
                         // log expected notes
                         Object.keys(d.notes).forEach((key) => {
                             let accent = d.notes[key] == d.notes[key].toUpperCase();
-                            let beatsInBar = drumtab.drums.beats * 2;
-                            let bar = Math.floor(drumtab.playback.currentBeat / (beatsInBar));
-                            let beat = (drumtab.playback.currentBeat / 2) % (beatsInBar/2);
-                            let hit = {
-                                beat: beat,
-                                bar: bar,
-                                c: drumtab.playback.currentBeat,
-                                time: drumtab.playback.currentTime
-                            }
+                            let hit = drumtab.getPosition(drumtab.playback.currentBeat);
+                            hit.time = drumtab.playback.currentTime;
                             drumtab.analysis[key].expected.push(hit);
                         });
                     } 
@@ -735,6 +724,13 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
 
     // go through each line of tab
     for(let i = 0; i < lines.length; i++) {        
+        // detect time signature
+        m = lines[i].match(/(\d+)\/(\d)+$/);
+        if(m) {
+            drumtab.timeSignature = [parseInt(m[1]), parseInt(m[2])];
+            continue;
+        }
+        
         m = lines[i].match(/^\s*$/);
         if(m) {
             newPart = true;
@@ -849,8 +845,8 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
     drumtab.drums = drums;
 
     let abc = "X: 1\n" +
-    "M: 4/4\n" +
-    "L: 1/" + drums.beats + "\n" +
+    `M: ${drumtab.timeSignature[0]}/${drumtab.timeSignature[1]}\n` +
+    "L: 1/" + (drums.beats  * drumtab.timeSignature[1] / drumtab.timeSignature[0]) + "\n" +
     "U:n=!style=x!\n" +
     "U:m=!style=harmonic!\n" +
     "K:perc\n" +
@@ -923,7 +919,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                         
                     }
                     beatCount += duration;
-                    if(beatCount == drumtab.drums.beats / 2) {
+                    if(beatCount % (drumtab.drums.beats * 2/ drumtab.timeSignature[0]) == 0) {
                         abc += " ";
                     }
                 }

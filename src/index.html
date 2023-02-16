@@ -172,7 +172,20 @@ crossorigin="anonymous"></script>
             updateABC();
         }));
 
+        drumtab.stop = () => {
+            if(drumtab.playing) {
+                drumtab.pause();
+            }
+            drumtab.playback = undefined;
+            while(drumtab.selectedNotes.length > 0) {
+                let n = drumtab.selectedNotes.pop();
+                n.classList.remove('selected');
+            }
+            ePlayStop.innerText = "Play";
+        }
+
         function updateABC() {
+            drumtab.stop();
             let tab = eTab.value;
             eAbc.value = drumtab.Tab2ABC(tab, drumtab.options.voicing);
             drumtab.updateScore("score", eAbc.value);
@@ -180,6 +193,8 @@ crossorigin="anonymous"></script>
 
         updateABC();
         drumtab.updateScore("score", eAbc.value);
+
+        
 
 
     </script>
