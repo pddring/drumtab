@@ -929,12 +929,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                 }
                 currentVoice++;
                 if(currentVoice < voiceCount) {
-                    if(drums.bars[i + 1] && drums.bars[i + 1].before.length > 0) {
-                        // new line
-                    } else {
-                        abc += "&\\";
-                    }
-                    
+                    abc += "&\\";                    
                 } else {
                     abc += " ";
                 }
