@@ -24,7 +24,7 @@ let midi= {
             aliases: ["H"],
             long: "closed hi hat",
             midi: "F#2",
-            midiAliases: ["A#2"],
+            midiAliases: ["A#2", A#0],
             stave: "ng"
         },
         floortom: {
@@ -32,7 +32,7 @@ let midi= {
             aliases: ["F", "T3"],
             long: "floor tom",
             midi: "G2",
-            midiAliases: [],
+            midiAliases: ["A#3"],
             stave: "A"
         },
         tom1: {
@@ -40,7 +40,7 @@ let midi= {
             aliases: ["T", "HT"],
             long: "high tom",
             midi: "C3",
-            midiAliases: [],
+            midiAliases: ["D3"],
             stave: "e"
         },
         tom2: {
@@ -48,7 +48,7 @@ let midi= {
             aliases: ["LT"],
             long: "low tom",
             midi: "A2",
-            midiAliases: [],
+            midiAliases: ["B2"],
             stave: "d"
         },
         ride: {
@@ -56,7 +56,7 @@ let midi= {
             aliases: ["RC", "RD", "R"],
             long: "ride",
             midi: "B3",
-            midiAliases: ["D#3"],
+            midiAliases: ["D#3", "F3"],
             stave: "nf"
         },
         crash: {
@@ -64,7 +64,7 @@ let midi= {
             aliases: ["C", "C1", "CR"],
             long: "crash cymbal",
             midi: "A3",
-            midiAliases: ["C#3"],
+            midiAliases: ["C#3", "G3", "E3"],
             stave: "na"
         },
         hihatpedal: {
