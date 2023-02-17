@@ -24,7 +24,7 @@ let midi= {
             aliases: ["H"],
             long: "closed hi hat",
             midi: "F#2",
-            midiAliases: ["A#2", A#0],
+            midiAliases: ["A#2", "A#0"],
             stave: "ng"
         },
         floortom: {
