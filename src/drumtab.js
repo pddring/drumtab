@@ -919,7 +919,14 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                         
                     }
                     beatCount += duration;
-                    if(beatCount % (drumtab.drums.beats * 2/ drumtab.timeSignature[0]) == 0) {
+                    let durationCount = duration / drumtab.drums.beats * drumtab.timeSignature[0]
+                    let count = (beatCount / drumtab.drums.beats) * drumtab.timeSignature[0];
+                    let tailDuration = (durationCount == 0.5 && drumtab.timeSignature[0] == 4)?2:1;
+                    if(drumtab.timeSignature[0] == 6 && drumtab.timeSignature[1] == 8) {
+                        tailDuration = 3;
+                    }
+                    console.log(count, durationCount, tailDuration);
+                    if(count % tailDuration == 0) {
                         abc += " ";
                     }
                 }
