@@ -787,6 +787,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
         if(m) {
             tripletPattern = m[1].split("|");
             console.log("Triplet pattern detected:", tripletPattern);
+            continue;
         }
 
         // extract part names
@@ -937,6 +938,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
         else {
             let voiceCount = Object.keys(drums.bars[i].voicing).length;
             let currentVoice = 0;
+            let tripletReductions = 0;
             for(const [voiceName, v] of Object.entries(drums.bars[i].voicing)) {
                 let beatCount = 0;
 
@@ -953,23 +955,32 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                 }
                 
                 for(let [beat, notes] of Object.entries(v.beats)) {
+                    
+                    
+                    if(notes[0].tripletPattern == "3") {
+                        tripletReductions++;
+                    }
                     beat = parseInt(beat);
+                    let tripletAdjustedBeat = beat - tripletReductions;
                     
                     // merging notes from multiple instruments into a single voice may mean durations for some notes need shortening
-                    let duration = drums.beats - beat;
-                    for(let j = beat + 1; j < drums.beats; j++) {
+                    let duration = drums.bars[i].notes - beat;
+                    for(let j = beat + 1; j < drums.bars[i].notes; j++) {
                         if(v.beats[j] !== undefined) {
                             duration = j - beat;
                             break;
                         }
                     }
+                    
                     for(let j = 0; j < notes.length; j++) {                      
                         notes[j].duration = duration;
                     }
+                    
 
                     for(let j = 0; j < notes.length; j++) {
                         if(notes[j].tripletPattern == "1") {
                             drumtab.noteLookup.addABC("(3", notes[j]);
+                            
                         }
                         drumtab.noteLookup.addABC(drumtab.Note2ABC(notes[j].style, midi.lookup(notes[j].instrument), duration, true));
                     }
@@ -984,7 +995,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                         notes[j].duration = duration;
                         notes[j].abc = drumtab.Note2ABC(notes[j].style, midi.lookup(notes[j].instrument), duration);
                         if(notes[j].tripletPattern == "3") {
-                            notes[j].abc += " "
+                            //notes[j].abc += " "
                         }
                         drumtab.noteLookup.addABC(notes[j].abc, notes[j]);
                     }
@@ -992,23 +1003,32 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                     // end a chord if necessary
                     if(notes.length > 1) {
                         drumtab.noteLookup.addABC("]");
-                        
                     }
 
-                    
-                    
+                    if(notes[0].tripletPattern != "3") {
+                        beatCount += duration;
+                    }
+                    let durationCount = duration / drumtab.drums.beats * drumtab.timeSignature[0];
 
-                    beatCount += duration;
-                    let durationCount = duration / drumtab.drums.beats * drumtab.timeSignature[0]
+                    
                     let count = (beatCount / drumtab.drums.beats) * drumtab.timeSignature[0];
-                    let tailDuration = (durationCount == 0.5 && drumtab.timeSignature[0] == 4)?2:1;
+                    let tailDuration = 1;
+                    if(durationCount == 0.5 && drumtab.timeSignature[0] == 4) {
+                        tailDuration = 2;
+                    }
+                    if(tripletReductions > 0) {
+                        tailDuration = 1;
+                    }
                     if(drumtab.timeSignature[0] == 6 && drumtab.timeSignature[1] == 8) {
                         tailDuration = 3;
                     }
                     //console.log(count, durationCount, tailDuration);
+                    
+                     
                     if(count % tailDuration == 0) {
-                        //abc += " ";
+                        drumtab.noteLookup.addABC(" ");
                     }
+                
                 }
                 currentVoice++;
                 if(currentVoice < voiceCount) {
