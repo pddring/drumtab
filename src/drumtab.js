@@ -595,8 +595,53 @@ drumtab.play = (repeatCount, done) => {
                         }
                     }
                 }
+                if(e && e.startCharArray) {
+                    let notes = {};
+                    for(let i = 0; i < e.startCharArray.length; i++) {
+                        let n = drumtab.noteLookup.getNote(e.startCharArray[i]);
+                        
+                        for(let j = e.startCharArray[i]; j < e.endCharArray[i]; j++) {
+                            let n = drumtab.noteLookup.getNote(j);
+                            if(n && n.note) {
+                                notes[n.note.instrument] = n.note;
+                                if(n.abc.length > 0) {
+                                    j += n.abc.length - 1;
+                                }
+                            }
+                        }
+
+                    }
+                    kit.draw(notes);
+                    // play midi notes
+                    if(drumtab.options.midi) {
+                        Object.keys(notes).forEach((key) => {
+                            let note = midi.lookup(key);
+                            drumtab.playnote(note.midi);
+                        });
+                    }
+                    // play audio notes
+                    if(drumtab.options.audio) 
+                    {
+                        Object.keys(notes).forEach((key) => {
+                            let accent = notes[key] == notes[key].style.toUpperCase();
+                            kit.sounds[key].volume = accent?1:0.2;
+                            kit.sounds[key].stop();
+                            kit.sounds[key].play();
+                        });
+                    }
+
+                    // log expected notes
+                    Object.keys(notes).forEach((key) => {
+                        let accent = notes[key] == notes[key].style.toUpperCase();
+                        let hit = drumtab.getPosition(drumtab.playback.currentBeat);
+                        hit.time = drumtab.playback.currentTime;
+                        drumtab.analysis[key].expected.push(hit);
+                    });
+                }
             },
             beatCallback: (e) => {
+                /// todo: work out playback best data structure
+                //console.log(drumtab.playback.currentBeat, drumtab.playback.currentTime);
                 if(drumtab.playback.currentBeat % 2 == 1) {
                     // all sounds off
                     kit.draw();
@@ -605,35 +650,7 @@ drumtab.play = (repeatCount, done) => {
                     // some sounds might be on
                     let d = drumtab.getPosition(drumtab.playback.currentBeat);
                     d.repeat = repeatCount;
-                    if(drumtab.drums.bars[d.bar] && drumtab.drums.bars[d.bar].all[d.beat]) {
-                        d.notes = drumtab.drums.bars[d.bar].all[d.beat];
-                        kit.draw(drumtab.drums.bars[d.bar].all[d.beat]);
-                        // play midi notes
-                        if(drumtab.options.midi) {
-                            Object.keys(d.notes).forEach((key) => {
-                                let note = midi.lookup(key);
-                                drumtab.playnote(note.midi);
-                            });
-                        }
-                        // play audio notes
-                        if(drumtab.options.audio) 
-                        {
-                            Object.keys(d.notes).forEach((key) => {
-                                let accent = d.notes[key] == d.notes[key].toUpperCase();
-                                kit.sounds[key].volume = accent?1:0.2;
-                                kit.sounds[key].stop();
-                                kit.sounds[key].play();
-                            });
-                        }
 
-                        // log expected notes
-                        Object.keys(d.notes).forEach((key) => {
-                            let accent = d.notes[key] == d.notes[key].toUpperCase();
-                            let hit = drumtab.getPosition(drumtab.playback.currentBeat);
-                            hit.time = drumtab.playback.currentTime;
-                            drumtab.analysis[key].expected.push(hit);
-                        });
-                    } 
                     //console.log(d);
                     
                     if(drumtab.playback.currentBeat == drumtab.playback.totalBeats) {
@@ -704,6 +721,34 @@ drumtab.options = {
     speedup: false
 }
 
+drumtab.noteLookup = {
+    abc: "",
+    notes: [],
+
+    // restart abc note lookup
+    reset: function() {
+        drumtab.noteLookup.abc = "";
+        drumtab.noteLookup.notes = [];
+    },
+
+    // return note associated with the section of ABC starting at startChar
+    getNote: function(startChar) {
+        return drumtab.noteLookup.notes[startChar];
+    },
+    
+    // add a section of abc associated with a note for playback
+    addABC: function(abc, note) {
+        if(abc.length > 0) {
+            drumtab.noteLookup.notes[drumtab.noteLookup.abc.length] = {
+                note: note,
+                abc: abc
+            };
+            drumtab.noteLookup.abc += abc;
+        }
+    }
+};
+
+
 drumtab.Tab2ABC = (tab, voicingIndex) => {
     drumtab.options.tab = tab;
     if(voicingIndex === undefined) {
@@ -721,6 +766,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
     let text = "";
     let lineCount = 0;
     let newPart = false;
+    let tripletPattern = [""];
 
     // go through each line of tab
     for(let i = 0; i < lines.length; i++) {        
@@ -735,6 +781,12 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
         if(m) {
             newPart = true;
             startBar = drums.bars.length;
+        }
+
+        m = lines[i].match(/^3:(.+$)/);
+        if(m) {
+            tripletPattern = m[1].split("|");
+            console.log("Triplet pattern detected:", tripletPattern);
         }
 
         // extract part names
@@ -763,7 +815,8 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                             sounds: {},
                             voicing: {},
                             before: "",
-                            after: ""
+                            after: "",
+                            tripletPattern: ""
                         }
                         for(let k = 0; k < voicing.names.length; k++) {
                             newBar.voicing[voicing.names[k]] = {
@@ -774,6 +827,8 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                         }
                         drums.bars.push(newBar);
                     }
+
+                    drums.bars[j + startBar].tripletPattern = tripletPattern[j];
                     if(newPart && j == 0) {
                         drums.lines[lineCount] = bars.length - 1;
                         drums.bars[j + startBar].before = "\n";
@@ -817,7 +872,11 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                                         instrument: voice.instrument,
                                         style: bar[k],
                                         duration: duration,
-                                        abc: drumtab.Note2ABC(bar[k], instrument, duration)
+                                        abc: drumtab.Note2ABC(bar[k], instrument, duration),
+                                        tripletPattern: 0
+                                    }
+                                    if(drums.bars[j + startBar].tripletPattern && drums.bars[j + startBar].tripletPattern[k]) {
+                                        note.tripletPattern = drums.bars[j + startBar].tripletPattern[k];
                                     }
                                     drums.bars[j + startBar].voicing[voicing.names[l]].beats[k].push(note);
                                 }
@@ -838,29 +897,40 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
     // get max number of beats in a bar
     drums.beats = 1;
     for(let i = 0; i < drums.bars.length; i++) {
-        if(drums.bars[i].notes > drums.beats) {
-            drums.beats = drums.bars[i].notes;
+        let beats = drums.bars[i].notes;
+        if(drums.bars[i].tripletPattern) {
+            for(let j = 0; j < drums.bars[i].tripletPattern.length; j++) {
+                if(drums.bars[i].tripletPattern[j] == "1") {
+                    beats--;
+                }
+            }
+        }
+        if(beats > drums.beats) {
+            drums.beats = beats;
+            
         }
     }
     drumtab.drums = drums;
 
-    let abc = "X: 1\n" +
+    drumtab.noteLookup.reset();
+    drumtab.noteLookup.addABC("X: 1\n" +
     `M: ${drumtab.timeSignature[0]}/${drumtab.timeSignature[1]}\n` +
     "L: 1/" + (drums.beats  * drumtab.timeSignature[1] / drumtab.timeSignature[0]) + "\n" +
     "U:n=!style=x!\n" +
     "U:m=!style=harmonic!\n" +
     "K:perc\n" +
-    "%%stretchlast\n"
+    "%%stretchlast\n");
+
     if(text.length > 0) {
-        abc += '"' + text + '"';
+        drumtab.noteLookup.addABC('"' + text + '"');
     }
 
     for(let i = 0; i < drums.bars.length; i++) {
-        abc += drums.bars[i].before;
+        drumtab.noteLookup.addABC(drums.bars[i].before);
 
         // check if bar is empty
         if(Object.keys(drums.bars[i].all).length == 0) {
-            abc += `z${drums.beats}`
+            drumtab.noteLookup.addABC(`z${drums.beats}`);
         } 
 
         // bar is not empty
@@ -879,7 +949,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                     }
                 }
                 if(firstBeat > 0) {
-                    abc += `z${firstBeat}`;
+                    drumtab.noteLookup.addABC(`z${firstBeat}`);
                 }
                 
                 for(let [beat, notes] of Object.entries(v.beats)) {
@@ -898,26 +968,36 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                     }
 
                     for(let j = 0; j < notes.length; j++) {
-                        abc += drumtab.Note2ABC(notes[j].style, midi.lookup(notes[j].instrument), duration, true);
+                        if(notes[j].tripletPattern == "1") {
+                            drumtab.noteLookup.addABC("(3", notes[j]);
+                        }
+                        drumtab.noteLookup.addABC(drumtab.Note2ABC(notes[j].style, midi.lookup(notes[j].instrument), duration, true));
                     }
                     
                     // start a chord if necessary
                     if(notes.length > 1) {
-                        abc += "[";
+                        drumtab.noteLookup.addABC("[");
                     }  
 
                     for(let j = 0; j < notes.length; j++) {
                         // reset duration of all notes to minimum duration
                         notes[j].duration = duration;
                         notes[j].abc = drumtab.Note2ABC(notes[j].style, midi.lookup(notes[j].instrument), duration);
-                        abc += notes[j].abc;
+                        if(notes[j].tripletPattern == "3") {
+                            notes[j].abc += " "
+                        }
+                        drumtab.noteLookup.addABC(notes[j].abc, notes[j]);
                     }
 
                     // end a chord if necessary
                     if(notes.length > 1) {
-                        abc += "]";
+                        drumtab.noteLookup.addABC("]");
                         
                     }
+
+                    
+                    
+
                     beatCount += duration;
                     let durationCount = duration / drumtab.drums.beats * drumtab.timeSignature[0]
                     let count = (beatCount / drumtab.drums.beats) * drumtab.timeSignature[0];
@@ -925,24 +1005,23 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                     if(drumtab.timeSignature[0] == 6 && drumtab.timeSignature[1] == 8) {
                         tailDuration = 3;
                     }
-                    console.log(count, durationCount, tailDuration);
+                    //console.log(count, durationCount, tailDuration);
                     if(count % tailDuration == 0) {
-                        abc += " ";
+                        //abc += " ";
                     }
                 }
                 currentVoice++;
                 if(currentVoice < voiceCount) {
-                    abc += "&\\";                    
+                    drumtab.noteLookup.addABC("&\\");
                 } else {
-                    abc += " ";
+                    drumtab.noteLookup.addABC(" ");
                 }
                 
                 
             }
         }
-        abc += drums.bars[i].after;
-        abc += "|"; 
+        drumtab.noteLookup.addABC(drums.bars[i].after);
+        drumtab.noteLookup.addABC("|"); 
     }
-
-    return abc;
+    return drumtab.noteLookup.abc;
 }
