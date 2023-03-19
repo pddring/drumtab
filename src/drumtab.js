@@ -767,6 +767,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
     let lineCount = 0;
     let newPart = false;
     let tripletPattern = [""];
+    let sextupletPattern = [""];
 
     // go through each line of tab
     for(let i = 0; i < lines.length; i++) {        
@@ -786,7 +787,12 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
         m = lines[i].match(/^3:(.+$)/);
         if(m) {
             tripletPattern = m[1].split("|");
-            console.log("Triplet pattern detected:", tripletPattern);
+            continue;
+        }
+
+        m = lines[i].match(/^6:(.+$)/);
+        if(m) {
+            sextupletPattern = m[1].split("|");
             continue;
         }
 
@@ -817,7 +823,8 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                             voicing: {},
                             before: "",
                             after: "",
-                            tripletPattern: ""
+                            tripletPattern: "",
+                            sextupletPattern: "",
                         }
                         for(let k = 0; k < voicing.names.length; k++) {
                             newBar.voicing[voicing.names[k]] = {
@@ -830,6 +837,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                     }
 
                     drums.bars[j + startBar].tripletPattern = tripletPattern[j];
+                    drums.bars[j + startBar].sextupletPattern = sextupletPattern[j];
                     if(newPart && j == 0) {
                         drums.lines[lineCount] = bars.length - 1;
                         drums.bars[j + startBar].before = "\n";
@@ -874,10 +882,14 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                                         style: bar[k],
                                         duration: duration,
                                         abc: drumtab.Note2ABC(bar[k], instrument, duration),
-                                        tripletPattern: 0
+                                        tripletPattern: 0,
+                                        sextupletPattern: 0
                                     }
                                     if(drums.bars[j + startBar].tripletPattern && drums.bars[j + startBar].tripletPattern[k]) {
                                         note.tripletPattern = drums.bars[j + startBar].tripletPattern[k];
+                                    }
+                                    if(drums.bars[j + startBar].sextupletPattern && drums.bars[j + startBar].sextupletPattern[k]) {
+                                        note.sextupletPattern = drums.bars[j + startBar].sextupletPattern[k];
                                     }
                                     drums.bars[j + startBar].voicing[voicing.names[l]].beats[k].push(note);
                                 }
@@ -903,6 +915,13 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
             for(let j = 0; j < drums.bars[i].tripletPattern.length; j++) {
                 if(drums.bars[i].tripletPattern[j] == "1") {
                     beats--;
+                }
+            }
+        }
+        if(drums.bars[i].sextupletPattern) {
+            for(let j = 0; j < drums.bars[i].sextupletPattern.length; j++) {
+                if(drums.bars[i].sextupletPattern[j] == "1") {
+                    beats-=2;
                 }
             }
         }
@@ -939,6 +958,7 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
             let voiceCount = Object.keys(drums.bars[i].voicing).length;
             let currentVoice = 0;
             let tripletReductions = 0;
+            let sextupletReductions = 0;
             for(const [voiceName, v] of Object.entries(drums.bars[i].voicing)) {
                 let beatCount = 0;
 
@@ -957,11 +977,14 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                 for(let [beat, notes] of Object.entries(v.beats)) {
                     
                     
-                    if(notes[0].tripletPattern == "3") {
+                    if(notes[0].tripletPattern == "1") {
                         tripletReductions++;
                     }
+                    if(notes[0].sextupletPattern == "1") {
+                        sextupletReductions++;
+                    }
                     beat = parseInt(beat);
-                    let tripletAdjustedBeat = beat - tripletReductions;
+                    let tripletAdjustedBeat = beat - tripletReductions - sextupletReductions;
                     
                     // merging notes from multiple instruments into a single voice may mean durations for some notes need shortening
                     let duration = drums.bars[i].notes - beat;
@@ -976,11 +999,12 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                         notes[j].duration = duration;
                     }
                     
-
                     for(let j = 0; j < notes.length; j++) {
                         if(notes[j].tripletPattern == "1") {
-                            drumtab.noteLookup.addABC("(3", notes[j]);
-                            
+                            drumtab.noteLookup.addABC("(3", notes[j]);  
+                        }
+                        if(notes[j].sextupletPattern == "1") {
+                            drumtab.noteLookup.addABC("(6", notes[j]);  
                         }
                         drumtab.noteLookup.addABC(drumtab.Note2ABC(notes[j].style, midi.lookup(notes[j].instrument), duration, true));
                     }
@@ -994,9 +1018,6 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                         // reset duration of all notes to minimum duration
                         notes[j].duration = duration;
                         notes[j].abc = drumtab.Note2ABC(notes[j].style, midi.lookup(notes[j].instrument), duration);
-                        if(notes[j].tripletPattern == "3") {
-                            //notes[j].abc += " "
-                        }
                         drumtab.noteLookup.addABC(notes[j].abc, notes[j]);
                     }
 
@@ -1005,25 +1026,32 @@ drumtab.Tab2ABC = (tab, voicingIndex) => {
                         drumtab.noteLookup.addABC("]");
                     }
 
-                    if(notes[0].tripletPattern != "3") {
+                    /*if(notes[0].tripletPattern != "3" && notes[0].sextupletPattern != "6" && notes[0].sextupletPattern != "3") {
+                        beatCount += duration;
+                    }*/
+                    if(parseInt(notes[0].tripletPattern) + parseInt(notes[0].sextupletPattern) > 0) {
+                        beatCount += (duration * 2 / 3.0);
+                    } else {
                         beatCount += duration;
                     }
-                    let durationCount = duration / drumtab.drums.beats * drumtab.timeSignature[0];
-
                     
-                    let count = (beatCount / drumtab.drums.beats) * drumtab.timeSignature[0];
+                    let durationCount = duration / drumtab.drums.beats * drumtab.timeSignature[0];
+                    let count = Math.round((beatCount / drumtab.drums.beats) * drumtab.timeSignature[0] * 100) / 100;
                     let tailDuration = 1;
+
                     if(durationCount == 0.5 && drumtab.timeSignature[0] == 4) {
                         tailDuration = 2;
                     }
                     if(tripletReductions > 0) {
                         tailDuration = 1;
                     }
+                    if(sextupletReductions > 0) {
+                        tailDuration = 1;
+                    }
                     if(drumtab.timeSignature[0] == 6 && drumtab.timeSignature[1] == 8) {
                         tailDuration = 3;
                     }
-                    //console.log(count, durationCount, tailDuration);
-                    
+                    console.log(count, durationCount, tailDuration);
                      
                     if(count % tailDuration == 0) {
                         drumtab.noteLookup.addABC(" ");
