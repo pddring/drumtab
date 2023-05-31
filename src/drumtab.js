@@ -207,7 +207,7 @@ drumtab.init = (kitid) => {
                     kit.sounds[zone] = this.sound.add(zone);
                 });
                 
-                kit.text = new Phaser.GameObjects.BitmapText(this, 500, 50, 'font', "");
+                kit.text = new Phaser.GameObjects.BitmapText(this, 500, 50, 'font', "", 60);
                 this.add.existing(kit.text);
                 kit.shapes = {
                     played: {}, // playback
@@ -572,13 +572,15 @@ drumtab.getPosition = (currentBeat) => {
     return d;
 }
 
-drumtab.play = (repeatCount, done) => {
+drumtab.play = (repeatCount, done, countIn=false) => {
     drumtab.restartAnalysis();
     drumtab.repeatCount = 1;
     drumtab.options.repeat = repeatCount;
     drumtab.repeatTotal = repeatCount;    
     if(!drumtab.playback) {
         drumtab.playback = new ABCJS.TimingCallbacks(score, {
+            extraMeasuresAtBeginning:countIn?1:0,
+
             eventCallback: (e) => {
                 // clear all selected notes
                 while(drumtab.selectedNotes.length > 0) {

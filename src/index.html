@@ -156,7 +156,7 @@ crossorigin="anonymous"></script>
                 let repeatCount = parseInt(eRepeat.value);
                 drumtab.play(repeatCount, e => {
                     ePlayStop.innerText = "Play";
-                });
+                }, true);
             }
         });
 
